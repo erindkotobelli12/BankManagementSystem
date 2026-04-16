@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Login" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.13.2">
+  <collaboration id="Collab_Login">
+    <participant id="Pool_User" name="User (Any Role)" processRef="Proc_User" />
+    <participant id="Pool_BankSystem" name="Banking System" processRef="Proc_BankSystem" />
+    <participant id="Pool_MFAService" name="MFA Service (SMS / Authenticator)" processRef="Proc_MFAService" />
+    <messageFlow id="mf_login1" sourceRef="Task_SubmitCredentials" targetRef="Task_SysReceiveCreds" />
+    <messageFlow id="mf_login2" sourceRef="Task_SysOTPSend" targetRef="Task_MFASend" />
+    <messageFlow id="mf_login3" sourceRef="Task_MFADeliver" targetRef="Task_UserReceiveOTP" />
+    <messageFlow id="mf_login4" sourceRef="Task_UserSubmitOTP" targetRef="Task_SysVerifyOTP" />
+    <messageFlow id="mf_login5" sourceRef="Task_SysIssueToken" targetRef="Task_UserDashboard" />
+  </collaboration>
+  <process id="Proc_User" isExecutable="false">
+    <startEvent id="Start_UserNavigate" name="Navigate to Login Page">
+      <outgoing>u_sf1</outgoing>
+    </startEvent>
+    <sequenceFlow id="u_sf1" sourceRef="Start_UserNavigate" targetRef="Task_EnterCredentials" />
+    <task id="Task_EnterCredentials" name="Enter Username &#38; Password">
+      <incoming>u_sf1</incoming>
+      <outgoing>u_sf2</outgoing>
+    </task>
+    <sequenceFlow id="u_sf2" sourceRef="Task_EnterCredentials" targetRef="Task_SubmitCredentials" />
+    <task id="Task_SubmitCredentials" name="Submit Login Request">
+      <incoming>u_sf2</incoming>
+      <incoming>u_sf_retry</incoming>
+      <outgoing>u_sf3</outgoing>
+    </task>
+    <sequenceFlow id="u_sf3" sourceRef="Task_SubmitCredentials" targetRef="GW_CredResult" />
+    <exclusiveGateway id="GW_CredResult" name="Credentials Accepted?">
+      <incoming>u_sf3</incoming>
+      <outgoing>u_sf4_ok</outgoing>
+      <outgoing>u_sf4_fail</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="u_sf4_ok" name="Yes" sourceRef="GW_CredResult" targetRef="Task_UserReceiveOTP" />
+    <sequenceFlow id="u_sf4_fail" name="No" sourceRef="GW_CredResult" targetRef="GW_AccountLocked" />
+    <exclusiveGateway id="GW_AccountLocked" name="Max Attempts Reached?">
+      <incoming>u_sf4_fail</incoming>
+      <outgoing>u_sf5_locked</outgoing>
+      <outgoing>u_sf5_retry</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="u_sf5_locked" name="Yes — Account Locked" sourceRef="GW_AccountLocked" targetRef="End_Locked" />
+    <sequenceFlow id="u_sf5_retry" name="No — Retry" sourceRef="GW_AccountLocked" targetRef="Task_EnterCredentials" />
+    <sequenceFlow id="u_sf_retry" sourceRef="Task_ResendOTP" targetRef="Task_SubmitCredentials" />
+    <receiveTask id="Task_UserReceiveOTP" name="Receive OTP (SMS / App)">
+      <incoming>u_sf4_ok</incoming>
+      <outgoing>u_sf6</outgoing>
+    </receiveTask>
+    <sequenceFlow id="u_sf6" sourceRef="Task_UserReceiveOTP" targetRef="Task_UserSubmitOTP" />
+    <task id="Task_UserSubmitOTP" name="Enter OTP within Time Window">
+      <incoming>u_sf6</incoming>
+      <outgoing>u_sf7</outgoing>
+    </task>
+    <sequenceFlow id="u_sf7" sourceRef="Task_UserSubmitOTP" targetRef="GW_OTPResult" />
+    <exclusiveGateway id="GW_OTPResult" name="OTP Valid?">
+      <incoming>u_sf7</incoming>
+      <outgoing>u_sf8_ok</outgoing>
+      <outgoing>u_sf8_expired</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="u_sf8_ok" name="Valid" sourceRef="GW_OTPResult" targetRef="Task_UserDashboard" />
+    <sequenceFlow id="u_sf8_expired" name="Expired / Invalid" sourceRef="GW_OTPResult" targetRef="Task_ResendOTP" />
+    <task id="Task_ResendOTP" name="Request New OTP (Resend)">
+      <incoming>u_sf8_expired</incoming>
+      <outgoing>u_sf_resend</outgoing>
+    </task>
+    <sequenceFlow id="u_sf_resend" sourceRef="Task_ResendOTP" targetRef="Task_UserReceiveOTP" />
+    <receiveTask id="Task_UserDashboard" name="Access Role-Specific Dashboard">
+      <incoming>u_sf8_ok</incoming>
+      <outgoing>u_sf9</outgoing>
+    </receiveTask>
+    <sequenceFlow id="u_sf9" sourceRef="Task_UserDashboard" targetRef="End_LoggedIn" />
+    <endEvent id="End_LoggedIn" name="Session Active — User Logged In">
+      <incoming>u_sf9</incoming>
+    </endEvent>
+    <endEvent id="End_Locked" name="Account Locked — Contact Administrator">
+      <incoming>u_sf5_locked</incoming>
+    </endEvent>
+  </process>
+  <process id="Proc_BankSystem" isExecutable="false">
+    <startEvent id="Task_SysReceiveCreds" name="Receive Login Request">
+      <outgoing>bs_sf1</outgoing>
+    </startEvent>
+    <sequenceFlow id="bs_sf1" sourceRef="Task_SysReceiveCreds" targetRef="Task_SysValidateCreds" />
+    <task id="Task_SysValidateCreds" name="Validate Username &#38; Password Against DB">
+      <incoming>bs_sf1</incoming>
+      <outgoing>bs_sf2</outgoing>
+    </task>
+    <sequenceFlow id="bs_sf2" sourceRef="Task_SysValidateCreds" targetRef="GW_SysCredValid" />
+    <exclusiveGateway id="GW_SysCredValid" name="Valid?">
+      <incoming>bs_sf2</incoming>
+      <outgoing>bs_sf3_ok</outgoing>
+      <outgoing>bs_sf3_fail</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="bs_sf3_ok" name="Yes" sourceRef="GW_SysCredValid" targetRef="Task_SysOTPSend" />
+    <sequenceFlow id="bs_sf3_fail" name="No" sourceRef="GW_SysCredValid" targetRef="Task_SysIncrementFail" />
+    <task id="Task_SysOTPSend" name="Trigger MFA — Generate &#38; Send OTP">
+      <incoming>bs_sf3_ok</incoming>
+      <outgoing>bs_sf4</outgoing>
+    </task>
+    <sequenceFlow id="bs_sf4" sourceRef="Task_SysOTPSend" targetRef="Task_SysVerifyOTP" />
+    <task id="Task_SysIncrementFail" name="Increment Failed Attempt Counter">
+      <incoming>bs_sf3_fail</incoming>
+      <outgoing>bs_sf5</outgoing>
+    </task>
+    <sequenceFlow id="bs_sf5" sourceRef="Task_SysIncrementFail" targetRef="GW_SysMaxFail" />
+    <exclusiveGateway id="GW_SysMaxFail" name="≥5 Failures?">
+      <incoming>bs_sf5</incoming>
+      <outgoing>bs_sf6_lock</outgoing>
+      <outgoing>bs_sf6_error</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="bs_sf6_lock" name="Yes" sourceRef="GW_SysMaxFail" targetRef="Task_SysLockAccount" />
+    <sequenceFlow id="bs_sf6_error" name="No" sourceRef="GW_SysMaxFail" targetRef="Task_SysShowError" />
+    <task id="Task_SysLockAccount" name="Lock Account &#38; Notify User">
+      <incoming>bs_sf6_lock</incoming>
+      <outgoing>bs_sf7</outgoing>
+    </task>
+    <sequenceFlow id="bs_sf9" sourceRef="Task_SysVerifyOTP" targetRef="GW_SysOTPValid" />
+    <sequenceFlow id="bs_sf10_fail" name="No" sourceRef="GW_SysOTPValid" targetRef="Task_SysOTPExpired" />
+    <sequenceFlow id="bs_sf7" sourceRef="Task_SysLockAccount" targetRef="End_SysLocked" />
+    <sequenceFlow id="bs_sf8" sourceRef="Task_SysShowError" targetRef="End_SysRetry" />
+    <sequenceFlow id="bs_sf11" sourceRef="Task_SysIssueToken" targetRef="End_SysSession" />
+    <sequenceFlow id="bs_sf12" sourceRef="Task_SysOTPExpired" targetRef="End_OTPExpired" />
+    <endEvent id="End_SysSession" name="Active Session Created">
+      <incoming>bs_sf11</incoming>
+    </endEvent>
+    <endEvent id="End_OTPExpired" name="OTP Resend Triggered">
+      <incoming>bs_sf12</incoming>
+    </endEvent>
+    <task id="Task_SysOTPExpired" name="Notify OTP Expired — Offer Resend">
+      <incoming>bs_sf10_fail</incoming>
+      <outgoing>bs_sf12</outgoing>
+    </task>
+    <task id="Task_SysIssueToken" name="Issue Secure Session Token &#38; Log Audit Entry">
+      <incoming>bs_sf10_ok</incoming>
+      <outgoing>bs_sf11</outgoing>
+    </task>
+    <endEvent id="End_SysLocked" name="Account Locked">
+      <incoming>bs_sf7</incoming>
+    </endEvent>
+    <sequenceFlow id="bs_sf10_ok" name="Yes" sourceRef="GW_SysOTPValid" targetRef="Task_SysIssueToken" />
+    <exclusiveGateway id="GW_SysOTPValid" name="OTP Correct &#38; Not Expired?">
+      <incoming>bs_sf9</incoming>
+      <outgoing>bs_sf10_fail</outgoing>
+      <outgoing>bs_sf10_ok</outgoing>
+    </exclusiveGateway>
+    <endEvent id="End_SysRetry" name="Retry Prompted">
+      <incoming>bs_sf8</incoming>
+    </endEvent>
+    <task id="Task_SysShowError" name="Display Error — Incorrect Credentials">
+      <incoming>bs_sf6_error</incoming>
+      <outgoing>bs_sf8</outgoing>
+    </task>
+    <receiveTask id="Task_SysVerifyOTP" name="Verify OTP Submitted by User">
+      <incoming>bs_sf4</incoming>
+      <outgoing>bs_sf9</outgoing>
+    </receiveTask>
+  </process>
+  <process id="Proc_MFAService" isExecutable="false">
+    <startEvent id="Task_MFASend" name="Receive OTP Delivery Request">
+      <outgoing>mfa_sf1</outgoing>
+    </startEvent>
+    <sequenceFlow id="mfa_sf1" sourceRef="Task_MFASend" targetRef="Task_MFAGenerateOTP" />
+    <task id="Task_MFAGenerateOTP" name="Generate One-Time Password">
+      <incoming>mfa_sf1</incoming>
+      <outgoing>mfa_sf2</outgoing>
+    </task>
+    <sequenceFlow id="mfa_sf2" sourceRef="Task_MFAGenerateOTP" targetRef="Task_MFADeliver" />
+    <task id="Task_MFADeliver" name="Deliver OTP via SMS or Authenticator App">
+      <incoming>mfa_sf2</incoming>
+      <outgoing>mfa_sf3</outgoing>
+    </task>
+    <endEvent id="End_MFADone" name="OTP Delivered">
+      <incoming>mfa_sf3</incoming>
+    </endEvent>
+    <sequenceFlow id="mfa_sf3" sourceRef="Task_MFADeliver" targetRef="End_MFADone" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Login">
+    <bpmndi:BPMNPlane id="BPMNPlane_Login" bpmnElement="Collab_Login">
+      <bpmndi:BPMNShape id="Pool_User_di" bpmnElement="Pool_User" isHorizontal="true">
+        <dc:Bounds x="130" y="80" width="1260" height="220" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_UserNavigate_di" bpmnElement="Start_UserNavigate">
+        <dc:Bounds x="182" y="171" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="214" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnterCredentials_di" bpmnElement="Task_EnterCredentials">
+        <dc:Bounds x="268" y="149" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubmitCredentials_di" bpmnElement="Task_SubmitCredentials">
+        <dc:Bounds x="438" y="149" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_CredResult_di" bpmnElement="GW_CredResult" isMarkerVisible="true">
+        <dc:Bounds x="608" y="164" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="586" y="221" width="96" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_AccountLocked_di" bpmnElement="GW_AccountLocked" isMarkerVisible="true">
+        <dc:Bounds x="608" y="254" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="583" y="311" width="100" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UserReceiveOTP_di" bpmnElement="Task_UserReceiveOTP">
+        <dc:Bounds x="718" y="149" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UserSubmitOTP_di" bpmnElement="Task_UserSubmitOTP">
+        <dc:Bounds x="888" y="149" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_OTPResult_di" bpmnElement="GW_OTPResult" isMarkerVisible="true">
+        <dc:Bounds x="1058" y="164" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1040" y="221" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ResendOTP_di" bpmnElement="Task_ResendOTP">
+        <dc:Bounds x="1038" y="249" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UserDashboard_di" bpmnElement="Task_UserDashboard">
+        <dc:Bounds x="1168" y="149" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_LoggedIn_di" bpmnElement="End_LoggedIn">
+        <dc:Bounds x="1358" y="171" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1330" y="214" width="94" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Locked_di" bpmnElement="End_Locked">
+        <dc:Bounds x="608" y="350" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="574" y="393" width="106" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="u_sf1_di" bpmnElement="u_sf1">
+        <di:waypoint x="218" y="189" />
+        <di:waypoint x="268" y="189" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf2_di" bpmnElement="u_sf2">
+        <di:waypoint x="388" y="189" />
+        <di:waypoint x="438" y="189" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf3_di" bpmnElement="u_sf3">
+        <di:waypoint x="558" y="189" />
+        <di:waypoint x="608" y="189" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf4_ok_di" bpmnElement="u_sf4_ok">
+        <di:waypoint x="658" y="189" />
+        <di:waypoint x="718" y="189" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="676" y="172" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf4_fail_di" bpmnElement="u_sf4_fail">
+        <di:waypoint x="633" y="214" />
+        <di:waypoint x="633" y="254" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="638" y="228" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf5_locked_di" bpmnElement="u_sf5_locked">
+        <di:waypoint x="633" y="304" />
+        <di:waypoint x="633" y="350" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="560" y="312" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf5_retry_di" bpmnElement="u_sf5_retry">
+        <di:waypoint x="608" y="279" />
+        <di:waypoint x="328" y="279" />
+        <di:waypoint x="328" y="229" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="444" y="258" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf6_di" bpmnElement="u_sf6">
+        <di:waypoint x="838" y="189" />
+        <di:waypoint x="888" y="189" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf7_di" bpmnElement="u_sf7">
+        <di:waypoint x="1008" y="189" />
+        <di:waypoint x="1058" y="189" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf8_ok_di" bpmnElement="u_sf8_ok">
+        <di:waypoint x="1108" y="189" />
+        <di:waypoint x="1168" y="189" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1122" y="172" width="28" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf8_expired_di" bpmnElement="u_sf8_expired">
+        <di:waypoint x="1083" y="214" />
+        <di:waypoint x="1083" y="249" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1090" y="225" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf_resend_di" bpmnElement="u_sf_resend">
+        <di:waypoint x="1038" y="289" />
+        <di:waypoint x="778" y="289" />
+        <di:waypoint x="778" y="229" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf9_di" bpmnElement="u_sf9">
+        <di:waypoint x="1308" y="189" />
+        <di:waypoint x="1358" y="189" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Pool_BankSystem_di" bpmnElement="Pool_BankSystem" isHorizontal="true">
+        <dc:Bounds x="130" y="460" width="1400" height="280" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysReceiveCreds_di" bpmnElement="Task_SysReceiveCreds">
+        <dc:Bounds x="182" y="571" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="155" y="614" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysValidateCreds_di" bpmnElement="Task_SysValidateCreds">
+        <dc:Bounds x="268" y="550" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_SysCredValid_di" bpmnElement="GW_SysCredValid" isMarkerVisible="true">
+        <dc:Bounds x="448" y="565" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="443" y="622" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysOTPSend_di" bpmnElement="Task_SysOTPSend">
+        <dc:Bounds x="558" y="550" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysIncrementFail_di" bpmnElement="Task_SysIncrementFail">
+        <dc:Bounds x="558" y="650" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_SysMaxFail_di" bpmnElement="GW_SysMaxFail" isMarkerVisible="true">
+        <dc:Bounds x="748" y="665" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="733" y="722" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysLockAccount_di" bpmnElement="Task_SysLockAccount">
+        <dc:Bounds x="858" y="650" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_SysLocked_di" bpmnElement="End_SysLocked">
+        <dc:Bounds x="1048" y="671" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1028" y="714" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_SysSession_di" bpmnElement="End_SysSession">
+        <dc:Bounds x="1392" y="571" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1375" y="614" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_OTPExpired_di" bpmnElement="End_OTPExpired">
+        <dc:Bounds x="1392" y="672" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1379" y="715" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysOTPExpired_di" bpmnElement="Task_SysOTPExpired">
+        <dc:Bounds x="1220" y="649" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysIssueToken_di" bpmnElement="Task_SysIssueToken">
+        <dc:Bounds x="1220" y="549" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_SysOTPValid_di" bpmnElement="GW_SysOTPValid" isMarkerVisible="true">
+        <dc:Bounds x="1075" y="595" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1063" y="557.5" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_SysRetry_di" bpmnElement="End_SysRetry">
+        <dc:Bounds x="1142" y="492" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1126" y="533" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysShowError_di" bpmnElement="Task_SysShowError">
+        <dc:Bounds x="935" y="480" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SysVerifyOTP_di" bpmnElement="Task_SysVerifyOTP">
+        <dc:Bounds x="795" y="560" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="bs_sf1_di" bpmnElement="bs_sf1">
+        <di:waypoint x="218" y="589" />
+        <di:waypoint x="268" y="589" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf2_di" bpmnElement="bs_sf2">
+        <di:waypoint x="398" y="589" />
+        <di:waypoint x="448" y="589" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf3_ok_di" bpmnElement="bs_sf3_ok">
+        <di:waypoint x="498" y="589" />
+        <di:waypoint x="558" y="589" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="514" y="572" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf3_fail_di" bpmnElement="bs_sf3_fail">
+        <di:waypoint x="473" y="615" />
+        <di:waypoint x="473" y="690" />
+        <di:waypoint x="558" y="690" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="480" y="648" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf4_di" bpmnElement="bs_sf4">
+        <di:waypoint x="688" y="589" />
+        <di:waypoint x="742" y="589" />
+        <di:waypoint x="742" y="599" />
+        <di:waypoint x="795" y="599" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf5_di" bpmnElement="bs_sf5">
+        <di:waypoint x="688" y="690" />
+        <di:waypoint x="748" y="690" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf6_lock_di" bpmnElement="bs_sf6_lock">
+        <di:waypoint x="798" y="690" />
+        <di:waypoint x="858" y="690" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="812" y="672" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf6_error_di" bpmnElement="bs_sf6_error">
+        <di:waypoint x="773" y="665" />
+        <di:waypoint x="773" y="519" />
+        <di:waypoint x="935" y="519" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="802" y="589" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf9_di" bpmnElement="bs_sf9">
+        <di:waypoint x="925" y="599" />
+        <di:waypoint x="1000" y="599" />
+        <di:waypoint x="1000" y="619" />
+        <di:waypoint x="1076" y="619" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf10_ok_di" bpmnElement="bs_sf10_ok">
+        <di:waypoint x="1123" y="618" />
+        <di:waypoint x="1173" y="618" />
+        <di:waypoint x="1173" y="588" />
+        <di:waypoint x="1220" y="588" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1135" y="601" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf10_fail_di" bpmnElement="bs_sf10_fail">
+        <di:waypoint x="1100" y="645" />
+        <di:waypoint x="1100" y="689" />
+        <di:waypoint x="1220" y="689" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1109" y="661" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf7_di" bpmnElement="bs_sf7">
+        <di:waypoint x="988" y="689" />
+        <di:waypoint x="1048" y="689" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf8_di" bpmnElement="bs_sf8">
+        <di:waypoint x="1065" y="519" />
+        <di:waypoint x="1104" y="519" />
+        <di:waypoint x="1104" y="510" />
+        <di:waypoint x="1142" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf11_di" bpmnElement="bs_sf11">
+        <di:waypoint x="1370" y="588" />
+        <di:waypoint x="1381" y="588" />
+        <di:waypoint x="1381" y="589" />
+        <di:waypoint x="1392" y="589" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bs_sf12_di" bpmnElement="bs_sf12">
+        <di:waypoint x="1370" y="690" />
+        <di:waypoint x="1392" y="690" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Pool_MFAService_di" bpmnElement="Pool_MFAService" isHorizontal="true">
+        <dc:Bounds x="130" y="780" width="1260" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MFASend_di" bpmnElement="Task_MFASend">
+        <dc:Bounds x="638" y="821" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="610" y="864" width="94" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MFAGenerateOTP_di" bpmnElement="Task_MFAGenerateOTP">
+        <dc:Bounds x="734" y="799" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MFADeliver_di" bpmnElement="Task_MFADeliver">
+        <dc:Bounds x="924" y="799" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_MFADone_di" bpmnElement="End_MFADone">
+        <dc:Bounds x="1134" y="821" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1113" y="864" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="mfa_sf1_di" bpmnElement="mfa_sf1">
+        <di:waypoint x="674" y="839" />
+        <di:waypoint x="734" y="839" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mfa_sf2_di" bpmnElement="mfa_sf2">
+        <di:waypoint x="864" y="839" />
+        <di:waypoint x="924" y="839" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mfa_sf3_di" bpmnElement="mfa_sf3">
+        <di:waypoint x="1074" y="839" />
+        <di:waypoint x="1134" y="839" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_login1_di" bpmnElement="mf_login1">
+        <di:waypoint x="498" y="229" />
+        <di:waypoint x="498" y="400" />
+        <di:waypoint x="200" y="400" />
+        <di:waypoint x="200" y="571" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_login2_di" bpmnElement="mf_login2">
+        <di:waypoint x="623" y="630" />
+        <di:waypoint x="623" y="780" />
+        <di:waypoint x="656" y="780" />
+        <di:waypoint x="656" y="821" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_login3_di" bpmnElement="mf_login3">
+        <di:waypoint x="999" y="799" />
+        <di:waypoint x="999" y="760" />
+        <di:waypoint x="778" y="760" />
+        <di:waypoint x="778" y="229" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_login4_di" bpmnElement="mf_login4">
+        <di:waypoint x="948" y="229" />
+        <di:waypoint x="948" y="440" />
+        <di:waypoint x="860" y="440" />
+        <di:waypoint x="860" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_login5_di" bpmnElement="mf_login5">
+        <di:waypoint x="1295" y="549" />
+        <di:waypoint x="1295" y="229" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
