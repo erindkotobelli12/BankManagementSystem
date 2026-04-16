@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_FundAllocation" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.13.2">
+  <collaboration id="Collab_FundAllocation">
+    <participant id="Pool_Director" name="Bank Director" processRef="Proc_Director" />
+    <participant id="Pool_FundSystem" name="Banking System" processRef="Proc_FundSystem" />
+    <participant id="Pool_TargetUnit" name="Target Branch / ATM Unit" processRef="Proc_TargetUnit" />
+    <messageFlow id="mf_fa1" sourceRef="Task_DirectorSubmit" targetRef="Start_FundSys" />
+    <messageFlow id="mf_fa2" sourceRef="Task_FundSysProcess" targetRef="Task_UnitReceive" />
+    <messageFlow id="mf_fa3" sourceRef="Task_FundSysNotifyError" targetRef="Task_DirectorHandleError" />
+    <messageFlow id="mf_fa4" sourceRef="Task_FundSysConfirm" targetRef="Task_DirectorReceiveConfirm" />
+  </collaboration>
+  <process id="Proc_Director" isExecutable="false">
+    <laneSet id="LaneSet_Director">
+      <lane id="Lane_Director" name="Bank Director">
+        <flowNodeRef>Start_DirectorLogin</flowNodeRef>
+        <flowNodeRef>Task_OpenFundModule</flowNodeRef>
+        <flowNodeRef>Task_ReviewBalances</flowNodeRef>
+        <flowNodeRef>Task_IdentifyNeed</flowNodeRef>
+        <flowNodeRef>Task_EnterAmount</flowNodeRef>
+        <flowNodeRef>Task_DirectorSubmit</flowNodeRef>
+        <flowNodeRef>End_DirectorCancelled</flowNodeRef>
+        <flowNodeRef>End_DirectorQueued</flowNodeRef>
+        <flowNodeRef>GW_DirectorWait</flowNodeRef>
+        <flowNodeRef>Task_SelectSourceDest</flowNodeRef>
+        <flowNodeRef>Task_DirectorQueued</flowNodeRef>
+        <flowNodeRef>GW_Retry</flowNodeRef>
+        <flowNodeRef>Task_DirectorHandleError</flowNodeRef>
+        <flowNodeRef>Task_DirectorConfirm</flowNodeRef>
+        <flowNodeRef>Task_DirectorReceiveConfirm</flowNodeRef>
+        <flowNodeRef>End_DirectorSuccess</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="Start_DirectorLogin" name="Bank Director Authenticated">
+      <outgoing>d_sf1</outgoing>
+    </startEvent>
+    <sequenceFlow id="d_sf1" sourceRef="Start_DirectorLogin" targetRef="Task_OpenFundModule" />
+    <task id="Task_OpenFundModule" name="Navigate to Fund Allocation Module">
+      <incoming>d_sf1</incoming>
+      <outgoing>d_sf2</outgoing>
+    </task>
+    <sequenceFlow id="d_sf2" sourceRef="Task_OpenFundModule" targetRef="Task_ReviewBalances" />
+    <task id="Task_ReviewBalances" name="Review Current Fund Allocations &#38; Balances (All Branches / ATMs)">
+      <incoming>d_sf2</incoming>
+      <outgoing>d_sf3</outgoing>
+    </task>
+    <sequenceFlow id="d_sf3" sourceRef="Task_ReviewBalances" targetRef="Task_IdentifyNeed" />
+    <task id="Task_IdentifyNeed" name="Identify Units Requiring Allocation or Redistribution">
+      <incoming>d_sf3</incoming>
+      <outgoing>d_sf4</outgoing>
+    </task>
+    <sequenceFlow id="d_sf4" sourceRef="Task_IdentifyNeed" targetRef="Task_SelectSourceDest" />
+    <sequenceFlow id="d_sf5" sourceRef="Task_SelectSourceDest" targetRef="Task_EnterAmount" />
+    <task id="Task_EnterAmount" name="Enter Transfer Amount">
+      <incoming>d_sf5</incoming>
+      <outgoing>d_sf6</outgoing>
+    </task>
+    <sequenceFlow id="d_sf6" sourceRef="Task_EnterAmount" targetRef="Task_DirectorConfirm" />
+    <sequenceFlow id="d_sf7" sourceRef="Task_DirectorConfirm" targetRef="Task_DirectorSubmit" />
+    <task id="Task_DirectorSubmit" name="Submit Allocation Request">
+      <incoming>d_sf7</incoming>
+      <outgoing>d_sf8</outgoing>
+    </task>
+    <sequenceFlow id="d_sf8" sourceRef="Task_DirectorSubmit" targetRef="GW_DirectorWait" />
+    <sequenceFlow id="d_sf9_confirm" sourceRef="GW_DirectorWait" targetRef="Task_DirectorReceiveConfirm" />
+    <sequenceFlow id="d_sf9_error" sourceRef="GW_DirectorWait" targetRef="Task_DirectorHandleError" />
+    <sequenceFlow id="d_sf9_queued" sourceRef="GW_DirectorWait" targetRef="Task_DirectorQueued" />
+    <sequenceFlow id="d_sf10" sourceRef="Task_DirectorReceiveConfirm" targetRef="End_DirectorSuccess" />
+    <sequenceFlow id="d_sf11" sourceRef="Task_DirectorHandleError" targetRef="GW_Retry" />
+    <sequenceFlow id="d_sf12_retry" name="Yes — Adjust Amount" sourceRef="GW_Retry" targetRef="Task_EnterAmount" />
+    <sequenceFlow id="d_sf12_cancel" name="No — Cancel" sourceRef="GW_Retry" targetRef="End_DirectorCancelled" />
+    <sequenceFlow id="d_sf13" sourceRef="Task_DirectorQueued" targetRef="End_DirectorQueued" />
+    <endEvent id="End_DirectorCancelled" name="Allocation Cancelled">
+      <incoming>d_sf12_cancel</incoming>
+    </endEvent>
+    <endEvent id="End_DirectorQueued" name="Allocation Queued — Pending Unit Reconnection">
+      <incoming>d_sf13</incoming>
+    </endEvent>
+    <eventBasedGateway id="GW_DirectorWait" name="Wait for System Response">
+      <incoming>d_sf8</incoming>
+      <outgoing>d_sf9_confirm</outgoing>
+      <outgoing>d_sf9_error</outgoing>
+      <outgoing>d_sf9_queued</outgoing>
+    </eventBasedGateway>
+    <task id="Task_SelectSourceDest" name="Select Source Unit (or Central Reserve) &#38; Destination Unit">
+      <incoming>d_sf4</incoming>
+      <outgoing>d_sf5</outgoing>
+    </task>
+    <receiveTask id="Task_DirectorQueued" name="Receive Queue Notification (Target Unit Offline)">
+      <incoming>d_sf9_queued</incoming>
+      <outgoing>d_sf13</outgoing>
+    </receiveTask>
+    <exclusiveGateway id="GW_Retry" name="Retry?">
+      <incoming>d_sf11</incoming>
+      <outgoing>d_sf12_retry</outgoing>
+      <outgoing>d_sf12_cancel</outgoing>
+    </exclusiveGateway>
+    <receiveTask id="Task_DirectorHandleError" name="Receive Error Notification (Insufficient Funds / Limit Exceeded)">
+      <incoming>d_sf9_error</incoming>
+      <outgoing>d_sf11</outgoing>
+    </receiveTask>
+    <task id="Task_DirectorConfirm" name="Review &#38; Confirm Allocation Details">
+      <incoming>d_sf6</incoming>
+      <outgoing>d_sf7</outgoing>
+    </task>
+    <receiveTask id="Task_DirectorReceiveConfirm" name="Receive Allocation Confirmation &#38; Updated Balances">
+      <incoming>d_sf9_confirm</incoming>
+      <outgoing>d_sf10</outgoing>
+    </receiveTask>
+    <endEvent id="End_DirectorSuccess" name="Allocation Confirmed — Balances Updated">
+      <incoming>d_sf10</incoming>
+    </endEvent>
+  </process>
+  <process id="Proc_FundSystem" isExecutable="false">
+    <startEvent id="Start_FundSys" name="Receive Allocation Request">
+      <outgoing>fs_sf1</outgoing>
+    </startEvent>
+    <sequenceFlow id="fs_sf1" sourceRef="Start_FundSys" targetRef="Task_FundSysValidate" />
+    <task id="Task_FundSysValidate" name="Validate: Check Source Balance, Policy &#38; Regulatory Limits">
+      <incoming>fs_sf1</incoming>
+      <outgoing>fs_sf2</outgoing>
+    </task>
+    <sequenceFlow id="fs_sf2" sourceRef="Task_FundSysValidate" targetRef="GW_FundValidation" />
+    <sequenceFlow id="fs_sf3_ok" name="Valid" sourceRef="GW_FundValidation" targetRef="GW_TargetOnline" />
+    <sequenceFlow id="fs_sf3_insuf" name="Insufficient Funds" sourceRef="GW_FundValidation" targetRef="Task_FundSysNotifyError" />
+    <sequenceFlow id="fs_sf3_limit" name="Limit Exceeded" sourceRef="GW_FundValidation" targetRef="Task_FundSysNotifyError" />
+    <exclusiveGateway id="GW_TargetOnline" name="Target Unit Online?">
+      <incoming>fs_sf3_ok</incoming>
+      <outgoing>fs_sf4_online</outgoing>
+      <outgoing>fs_sf4_offline</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="fs_sf4_online" name="Yes" sourceRef="GW_TargetOnline" targetRef="Task_FundSysProcess" />
+    <sequenceFlow id="fs_sf4_offline" name="No — Offline" sourceRef="GW_TargetOnline" targetRef="Task_FundSysQueue" />
+    <task id="Task_FundSysProcess" name="Process Fund Movement — Debit Source, Credit Destination">
+      <incoming>fs_sf4_online</incoming>
+      <outgoing>fs_sf5</outgoing>
+    </task>
+    <sequenceFlow id="fs_sf5" sourceRef="Task_FundSysProcess" targetRef="Task_FundSysAudit" />
+    <sequenceFlow id="fs_sf6" sourceRef="Task_FundSysAudit" targetRef="Task_FundSysConfirm" />
+    <endEvent id="End_FundSysError" name="Allocation Blocked — Error Sent">
+      <incoming>fs_sf8</incoming>
+    </endEvent>
+    <sequenceFlow id="fs_sf7" sourceRef="Task_FundSysConfirm" targetRef="End_FundSysSuccess" />
+    <sequenceFlow id="fs_sf8" sourceRef="Task_FundSysNotifyError" targetRef="End_FundSysError" />
+    <sequenceFlow id="fs_sf9" sourceRef="Task_FundSysQueue" targetRef="End_FundSysQueued" />
+    <endEvent id="End_FundSysSuccess" name="Fund Movement Complete">
+      <incoming>fs_sf7</incoming>
+    </endEvent>
+    <task id="Task_FundSysConfirm" name="Update Balances in Real Time &#38; Send Confirmation to Director">
+      <incoming>fs_sf6</incoming>
+      <outgoing>fs_sf7</outgoing>
+    </task>
+    <task id="Task_FundSysAudit" name="Log Transaction Record &#38; Audit Trail Entry">
+      <incoming>fs_sf5</incoming>
+      <outgoing>fs_sf6</outgoing>
+    </task>
+    <endEvent id="End_FundSysQueued" name="Allocation Queued">
+      <incoming>fs_sf9</incoming>
+    </endEvent>
+    <task id="Task_FundSysQueue" name="Queue Allocation &#38; Notify Director — Unit Offline">
+      <incoming>fs_sf4_offline</incoming>
+      <outgoing>fs_sf9</outgoing>
+    </task>
+    <exclusiveGateway id="GW_FundValidation" name="Validation Result">
+      <incoming>fs_sf2</incoming>
+      <outgoing>fs_sf3_ok</outgoing>
+      <outgoing>fs_sf3_insuf</outgoing>
+      <outgoing>fs_sf3_limit</outgoing>
+    </exclusiveGateway>
+    <task id="Task_FundSysNotifyError" name="Send Error Notification to Director (Reason + Details)">
+      <incoming>fs_sf3_insuf</incoming>
+      <incoming>fs_sf3_limit</incoming>
+      <outgoing>fs_sf8</outgoing>
+    </task>
+  </process>
+  <process id="Proc_TargetUnit" isExecutable="false">
+    <startEvent id="Task_UnitReceive" name="Receive Incoming Fund Transfer">
+      <outgoing>u_sf1</outgoing>
+    </startEvent>
+    <sequenceFlow id="u_sf1" sourceRef="Task_UnitReceive" targetRef="Task_UnitUpdateBalance" />
+    <task id="Task_UnitUpdateBalance" name="Update Local Cash Balance">
+      <incoming>u_sf1</incoming>
+      <outgoing>u_sf2</outgoing>
+    </task>
+    <sequenceFlow id="u_sf2" sourceRef="Task_UnitUpdateBalance" targetRef="Task_UnitAcknowledge" />
+    <task id="Task_UnitAcknowledge" name="Acknowledge Receipt to Banking System">
+      <incoming>u_sf2</incoming>
+      <outgoing>u_sf3</outgoing>
+    </task>
+    <endEvent id="End_UnitReady" name="Unit Ready — Funds Available">
+      <incoming>u_sf3</incoming>
+    </endEvent>
+    <sequenceFlow id="u_sf3" sourceRef="Task_UnitAcknowledge" targetRef="End_UnitReady" />
+    <startEvent id="Task_UnitQueue" name="Unit Offline — Allocation Queued">
+      <outgoing>u_sf4</outgoing>
+    </startEvent>
+    <sequenceFlow id="u_sf4" sourceRef="Task_UnitQueue" targetRef="Task_UnitReconnect" />
+    <task id="Task_UnitReconnect" name="Unit Comes Back Online — Apply Queued Transfer">
+      <incoming>u_sf4</incoming>
+      <outgoing>u_sf5</outgoing>
+    </task>
+    <endEvent id="End_UnitQueued" name="Queued Funds Applied">
+      <incoming>u_sf5</incoming>
+    </endEvent>
+    <sequenceFlow id="u_sf5" sourceRef="Task_UnitReconnect" targetRef="End_UnitQueued" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Fund">
+    <bpmndi:BPMNPlane id="BPMNPlane_Fund" bpmnElement="Collab_FundAllocation">
+      <bpmndi:BPMNShape id="Pool_Director_di" bpmnElement="Pool_Director" isHorizontal="true">
+        <dc:Bounds x="130" y="80" width="1400" height="375" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Director_di" bpmnElement="Lane_Director" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1370" height="375" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_DirectorLogin_di" bpmnElement="Start_DirectorLogin">
+        <dc:Bounds x="192" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="165" y="255" width="94" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_OpenFundModule_di" bpmnElement="Task_OpenFundModule">
+        <dc:Bounds x="278" y="190" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewBalances_di" bpmnElement="Task_ReviewBalances">
+        <dc:Bounds x="448" y="190" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_IdentifyNeed_di" bpmnElement="Task_IdentifyNeed">
+        <dc:Bounds x="638" y="190" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EnterAmount_di" bpmnElement="Task_EnterAmount">
+        <dc:Bounds x="998" y="190" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DirectorSubmit_di" bpmnElement="Task_DirectorSubmit">
+        <dc:Bounds x="1348" y="190" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_DirectorCancelled_di" bpmnElement="End_DirectorCancelled">
+        <dc:Bounds x="858" y="370" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="832" y="413" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_DirectorQueued_di" bpmnElement="End_DirectorQueued">
+        <dc:Bounds x="688" y="312" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="658" y="355" width="98" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_DirectorWait_di" bpmnElement="GW_DirectorWait">
+        <dc:Bounds x="1355" y="345" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1342" y="402" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SelectSourceDest_di" bpmnElement="Task_SelectSourceDest">
+        <dc:Bounds x="798" y="120" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DirectorQueued_di" bpmnElement="Task_DirectorQueued">
+        <dc:Bounds x="800" y="240" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_Retry_di" bpmnElement="GW_Retry" isMarkerVisible="true">
+        <dc:Bounds x="915" y="305" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="923" y="281" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DirectorHandleError_di" bpmnElement="Task_DirectorHandleError">
+        <dc:Bounds x="1010" y="340" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DirectorConfirm_di" bpmnElement="Task_DirectorConfirm">
+        <dc:Bounds x="1168" y="120" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DirectorReceiveConfirm_di" bpmnElement="Task_DirectorReceiveConfirm">
+        <dc:Bounds x="1200" y="250" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_DirectorSuccess_di" bpmnElement="End_DirectorSuccess">
+        <dc:Bounds x="1212" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1199" y="435" width="66" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="d_sf1_di" bpmnElement="d_sf1">
+        <di:waypoint x="228" y="230" />
+        <di:waypoint x="278" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf2_di" bpmnElement="d_sf2">
+        <di:waypoint x="398" y="230" />
+        <di:waypoint x="448" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf3_di" bpmnElement="d_sf3">
+        <di:waypoint x="588" y="230" />
+        <di:waypoint x="638" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf4_di" bpmnElement="d_sf4">
+        <di:waypoint x="758" y="230" />
+        <di:waypoint x="778" y="230" />
+        <di:waypoint x="778" y="160" />
+        <di:waypoint x="798" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf5_di" bpmnElement="d_sf5">
+        <di:waypoint x="938" y="160" />
+        <di:waypoint x="968" y="160" />
+        <di:waypoint x="968" y="230" />
+        <di:waypoint x="998" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf6_di" bpmnElement="d_sf6">
+        <di:waypoint x="1118" y="230" />
+        <di:waypoint x="1143" y="230" />
+        <di:waypoint x="1143" y="160" />
+        <di:waypoint x="1168" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf7_di" bpmnElement="d_sf7">
+        <di:waypoint x="1298" y="160" />
+        <di:waypoint x="1323" y="160" />
+        <di:waypoint x="1323" y="230" />
+        <di:waypoint x="1348" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf8_di" bpmnElement="d_sf8">
+        <di:waypoint x="1413" y="270" />
+        <di:waypoint x="1413" y="308" />
+        <di:waypoint x="1395" y="308" />
+        <di:waypoint x="1395" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf9_confirm_di" bpmnElement="d_sf9_confirm">
+        <di:waypoint x="1380" y="345" />
+        <di:waypoint x="1380" y="290" />
+        <di:waypoint x="1300" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf9_error_di" bpmnElement="d_sf9_error">
+        <di:waypoint x="1355" y="370" />
+        <di:waypoint x="1287" y="370" />
+        <di:waypoint x="1287" y="380" />
+        <di:waypoint x="1130" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf9_queued_di" bpmnElement="d_sf9_queued">
+        <di:waypoint x="1355" y="370" />
+        <di:waypoint x="1142" y="370" />
+        <di:waypoint x="1142" y="280" />
+        <di:waypoint x="920" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf10_di" bpmnElement="d_sf10">
+        <di:waypoint x="1250" y="330" />
+        <di:waypoint x="1250" y="361" />
+        <di:waypoint x="1244" y="361" />
+        <di:waypoint x="1244" y="399" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf11_di" bpmnElement="d_sf11">
+        <di:waypoint x="1010" y="380" />
+        <di:waypoint x="940" y="380" />
+        <di:waypoint x="940" y="355" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf12_retry_di" bpmnElement="d_sf12_retry">
+        <di:waypoint x="965" y="330" />
+        <di:waypoint x="1058" y="330" />
+        <di:waypoint x="1058" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="975" y="308" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf12_cancel_di" bpmnElement="d_sf12_cancel">
+        <di:waypoint x="940" y="355" />
+        <di:waypoint x="940" y="388" />
+        <di:waypoint x="894" y="388" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="898" y="363" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="d_sf13_di" bpmnElement="d_sf13">
+        <di:waypoint x="800" y="280" />
+        <di:waypoint x="762" y="280" />
+        <di:waypoint x="762" y="330" />
+        <di:waypoint x="724" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Pool_FundSystem_di" bpmnElement="Pool_FundSystem" isHorizontal="true">
+        <dc:Bounds x="130" y="440" width="1400" height="330" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_FundSys_di" bpmnElement="Start_FundSys">
+        <dc:Bounds x="192" y="551" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="162" y="594" width="96" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FundSysValidate_di" bpmnElement="Task_FundSysValidate">
+        <dc:Bounds x="278" y="530" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_TargetOnline_di" bpmnElement="GW_TargetOnline" isMarkerVisible="true">
+        <dc:Bounds x="588" y="545" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="585" y="507.5" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FundSysProcess_di" bpmnElement="Task_FundSysProcess">
+        <dc:Bounds x="698" y="530" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_FundSysError_di" bpmnElement="End_FundSysError">
+        <dc:Bounds x="688" y="651" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="654" y="694" width="106" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_FundSysSuccess_di" bpmnElement="End_FundSysSuccess">
+        <dc:Bounds x="1442" y="532" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1421" y="575" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FundSysConfirm_di" bpmnElement="Task_FundSysConfirm">
+        <dc:Bounds x="1190" y="529" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FundSysAudit_di" bpmnElement="Task_FundSysAudit">
+        <dc:Bounds x="1020" y="529" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_FundSysQueued_di" bpmnElement="End_FundSysQueued">
+        <dc:Bounds x="1182" y="642" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1156" y="685" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FundSysQueue_di" bpmnElement="Task_FundSysQueue">
+        <dc:Bounds x="895" y="630" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_FundValidation_di" bpmnElement="GW_FundValidation" isMarkerVisible="true">
+        <dc:Bounds x="465" y="505" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="449" y="481" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FundSysNotifyError_di" bpmnElement="Task_FundSysNotifyError">
+        <dc:Bounds x="415" y="650" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="fs_sf1_di" bpmnElement="fs_sf1">
+        <di:waypoint x="228" y="569" />
+        <di:waypoint x="278" y="569" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf2_di" bpmnElement="fs_sf2">
+        <di:waypoint x="428" y="569" />
+        <di:waypoint x="447" y="569" />
+        <di:waypoint x="447" y="529" />
+        <di:waypoint x="466" y="529" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf3_ok_di" bpmnElement="fs_sf3_ok">
+        <di:waypoint x="490" y="555" />
+        <di:waypoint x="490" y="569" />
+        <di:waypoint x="589" y="569" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="488" y="555" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf3_insuf_di" bpmnElement="fs_sf3_insuf">
+        <di:waypoint x="490" y="555" />
+        <di:waypoint x="490" y="618" />
+        <di:waypoint x="440" y="618" />
+        <di:waypoint x="440" y="650" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="360" y="628" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf3_limit_di" bpmnElement="fs_sf3_limit">
+        <di:waypoint x="515" y="530" />
+        <di:waypoint x="515" y="618" />
+        <di:waypoint x="490" y="618" />
+        <di:waypoint x="490" y="650" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="462" y="575" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf4_online_di" bpmnElement="fs_sf4_online">
+        <di:waypoint x="638" y="569" />
+        <di:waypoint x="698" y="569" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="652" y="552" width="22" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf4_offline_di" bpmnElement="fs_sf4_offline">
+        <di:waypoint x="613" y="595" />
+        <di:waypoint x="613" y="670" />
+        <di:waypoint x="895" y="670" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="615" y="626" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf5_di" bpmnElement="fs_sf5">
+        <di:waypoint x="848" y="569" />
+        <di:waypoint x="934" y="569" />
+        <di:waypoint x="934" y="568" />
+        <di:waypoint x="1020" y="568" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf6_di" bpmnElement="fs_sf6">
+        <di:waypoint x="1160" y="568" />
+        <di:waypoint x="1190" y="568" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf7_di" bpmnElement="fs_sf7">
+        <di:waypoint x="1350" y="568" />
+        <di:waypoint x="1396" y="568" />
+        <di:waypoint x="1396" y="550" />
+        <di:waypoint x="1442" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf8_di" bpmnElement="fs_sf8">
+        <di:waypoint x="565" y="689" />
+        <di:waypoint x="627" y="689" />
+        <di:waypoint x="627" y="669" />
+        <di:waypoint x="688" y="669" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="fs_sf9_di" bpmnElement="fs_sf9">
+        <di:waypoint x="1045" y="669" />
+        <di:waypoint x="1104" y="669" />
+        <di:waypoint x="1104" y="660" />
+        <di:waypoint x="1182" y="660" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Pool_TargetUnit_di" bpmnElement="Pool_TargetUnit" isHorizontal="true">
+        <dc:Bounds x="130" y="740" width="1400" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UnitReceive_di" bpmnElement="Task_UnitReceive">
+        <dc:Bounds x="698" y="791" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="666" y="834" width="100" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UnitUpdateBalance_di" bpmnElement="Task_UnitUpdateBalance">
+        <dc:Bounds x="794" y="769" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UnitAcknowledge_di" bpmnElement="Task_UnitAcknowledge">
+        <dc:Bounds x="994" y="769" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_UnitReady_di" bpmnElement="End_UnitReady">
+        <dc:Bounds x="1194" y="791" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1168" y="834" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UnitQueue_di" bpmnElement="Task_UnitQueue">
+        <dc:Bounds x="192" y="791" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="834" width="102" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UnitReconnect_di" bpmnElement="Task_UnitReconnect">
+        <dc:Bounds x="288" y="769" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_UnitQueued_di" bpmnElement="End_UnitQueued">
+        <dc:Bounds x="508" y="791" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="480" y="834" width="94" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="u_sf1_di" bpmnElement="u_sf1">
+        <di:waypoint x="734" y="809" />
+        <di:waypoint x="794" y="809" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf2_di" bpmnElement="u_sf2">
+        <di:waypoint x="934" y="809" />
+        <di:waypoint x="994" y="809" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf3_di" bpmnElement="u_sf3">
+        <di:waypoint x="1134" y="809" />
+        <di:waypoint x="1194" y="809" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf4_di" bpmnElement="u_sf4">
+        <di:waypoint x="228" y="809" />
+        <di:waypoint x="288" y="809" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="u_sf5_di" bpmnElement="u_sf5">
+        <di:waypoint x="448" y="809" />
+        <di:waypoint x="508" y="809" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_fa1_di" bpmnElement="mf_fa1">
+        <di:waypoint x="1413" y="270" />
+        <di:waypoint x="1413" y="440" />
+        <di:waypoint x="210" y="440" />
+        <di:waypoint x="210" y="551" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_fa2_di" bpmnElement="mf_fa2">
+        <di:waypoint x="773" y="610" />
+        <di:waypoint x="773" y="740" />
+        <di:waypoint x="716" y="791" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_fa3_di" bpmnElement="mf_fa3">
+        <di:waypoint x="460" y="650" />
+        <di:waypoint x="460" y="400" />
+        <di:waypoint x="1014" y="418" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="mf_fa4_di" bpmnElement="mf_fa4">
+        <di:waypoint x="1270" y="529" />
+        <di:waypoint x="1270" y="330" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
