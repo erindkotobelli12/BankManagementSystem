@@ -1,323 +1,301 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-             id="Definitions_AccountOpening"
-             targetNamespace="http://bpmn.io/schema/bpmn">
-
-  <collaboration id="Collab_AccountOpening">
-    <participant id="Pool_Teller" name="Bank Teller" processRef="Proc_Teller"/>
-    <participant id="Pool_Customer" name="Customer" processRef="Proc_Customer"/>
-    <participant id="Pool_System" name="Banking System" processRef="Proc_System"/>
-    <participant id="Pool_Supervisor" name="Supervisor" processRef="Proc_Supervisor"/>
-    <messageFlow id="mf1" sourceRef="Task_TellerVerify" targetRef="Task_CustomerPresent"/>
-    <messageFlow id="mf2" sourceRef="Task_SendApproval" targetRef="Task_SupervisorReview"/>
-    <messageFlow id="mf3" sourceRef="Task_SupervisorDecide" targetRef="Task_ReceiveDecision"/>
-    <messageFlow id="mf4" sourceRef="Task_SystemConfirm" targetRef="Task_CustomerNotified"/>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_AccountOpening" targetNamespace="http://example.com/bpmn/account-opening" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.13.2">
+  <collaboration id="Collaboration_AccountOpening">
+    <participant id="Pool_BankTeller" name="Bank Teller" processRef="Process_BankTeller" />
+    <participant id="Pool_Customer" name="Customer" processRef="Process_Customer" />
+    <participant id="Pool_BankingSystem" name="Banking System" processRef="Process_BankingSystem" />
+    <participant id="Pool_Supervisor" name="Supervisor" processRef="Process_Supervisor" />
+    <messageFlow id="MF_IdentityCheck" name="Identity check" sourceRef="Task_VerifyIdentity" targetRef="IntCatch_PresentDocs" />
+    <messageFlow id="MF_KYCSubmitted" name="KYC submitted" sourceRef="Task_UploadKYC" targetRef="IntCatch_ReceiveKYC" />
+    <messageFlow id="MF_ApprovalRequest" name="Approval request" sourceRef="Task_SubmitApproval" targetRef="IntCatch_ReceiveApprovalRequest" />
   </collaboration>
-
-  <!-- TELLER POOL -->
-  <process id="Proc_Teller" isExecutable="false">
-    <laneSet id="LaneSet_Teller">
-      <lane id="Lane_Teller" name="Bank Teller">
-        <flowNodeRef>Start_TellerLogin</flowNodeRef>
-        <flowNodeRef>Task_SelectOpenAccount</flowNodeRef>
-        <flowNodeRef>Task_EnterCustomerDetails</flowNodeRef>
-        <flowNodeRef>Task_TellerVerify</flowNodeRef>
-        <flowNodeRef>Task_UploadKYC</flowNodeRef>
-        <flowNodeRef>Task_SelectAccountType</flowNodeRef>
-        <flowNodeRef>Task_SendApproval</flowNodeRef>
-        <flowNodeRef>Task_ReceiveDecision</flowNodeRef>
-        <flowNodeRef>GW_ApprovalDecision</flowNodeRef>
-        <flowNodeRef>Task_CorrectionNeeded</flowNodeRef>
-        <flowNodeRef>End_AccountCreated</flowNodeRef>
-        <flowNodeRef>End_Rejected</flowNodeRef>
-      </lane>
-    </laneSet>
-
-    <startEvent id="Start_TellerLogin" name="Teller Logged In">
-      <outgoing>sf1</outgoing>
-    </startEvent>
-
-    <sequenceFlow id="sf1" sourceRef="Start_TellerLogin" targetRef="Task_SelectOpenAccount"/>
-    <task id="Task_SelectOpenAccount" name="Select &#34;Open New Account&#34;">
-      <incoming>sf1</incoming>
-      <outgoing>sf2</outgoing>
-    </task>
-
-    <sequenceFlow id="sf2" sourceRef="Task_SelectOpenAccount" targetRef="Task_EnterCustomerDetails"/>
-    <task id="Task_EnterCustomerDetails" name="Enter Customer Personal &amp; Contact Details">
-      <incoming>sf2</incoming>
-      <outgoing>sf3</outgoing>
-    </task>
-
-    <sequenceFlow id="sf3" sourceRef="Task_EnterCustomerDetails" targetRef="Task_TellerVerify"/>
-    <task id="Task_TellerVerify" name="Verify Customer Identity">
-      <incoming>sf3</incoming>
-      <outgoing>sf4</outgoing>
-    </task>
-
-    <sequenceFlow id="sf4" sourceRef="Task_TellerVerify" targetRef="Task_UploadKYC"/>
-    <task id="Task_UploadKYC" name="Upload / Record KYC Documents">
-      <incoming>sf4</incoming>
-      <outgoing>sf5</outgoing>
-    </task>
-
-    <sequenceFlow id="sf5" sourceRef="Task_UploadKYC" targetRef="Task_SelectAccountType"/>
-    <task id="Task_SelectAccountType" name="Select Account Type (Savings / Current / Fixed / Loan)">
-      <incoming>sf5</incoming>
-      <outgoing>sf6</outgoing>
-    </task>
-
-    <sequenceFlow id="sf6" sourceRef="Task_SelectAccountType" targetRef="Task_SendApproval"/>
-    <task id="Task_SendApproval" name="Submit Request for Supervisor Approval">
-      <incoming>sf6</incoming>
-      <outgoing>sf7</outgoing>
-    </task>
-
-    <sequenceFlow id="sf7" sourceRef="Task_SendApproval" targetRef="Task_ReceiveDecision"/>
-    <receiveTask id="Task_ReceiveDecision" name="Receive Supervisor Decision">
-      <incoming>sf7</incoming>
-      <outgoing>sf8</outgoing>
-    </receiveTask>
-
-    <sequenceFlow id="sf8" sourceRef="Task_ReceiveDecision" targetRef="GW_ApprovalDecision"/>
-    <exclusiveGateway id="GW_ApprovalDecision" name="Approved?">
-      <incoming>sf8</incoming>
-      <outgoing>sf9_yes</outgoing>
-      <outgoing>sf9_no</outgoing>
-    </exclusiveGateway>
-
-    <sequenceFlow id="sf9_yes" name="Yes" sourceRef="GW_ApprovalDecision" targetRef="End_AccountCreated"/>
-    <sequenceFlow id="sf9_no" name="No / Corrections Required" sourceRef="GW_ApprovalDecision" targetRef="Task_CorrectionNeeded"/>
-
-    <task id="Task_CorrectionNeeded" name="Inform Customer of Rejection / Request Corrections">
-      <incoming>sf9_no</incoming>
-      <outgoing>sf10</outgoing>
-    </task>
-    <sequenceFlow id="sf10" sourceRef="Task_CorrectionNeeded" targetRef="End_Rejected"/>
-
-    <endEvent id="End_AccountCreated" name="Account Successfully Created">
-      <incoming>sf9_yes</incoming>
-    </endEvent>
-    <endEvent id="End_Rejected" name="Account Opening Rejected">
-      <incoming>sf10</incoming>
-    </endEvent>
+  <process id="Process_BankTeller" name="Bank Teller" isExecutable="false">
+    <startEvent id="Start_TellerLoggedIn" name="Teller Logged In" />
+    <task id="Task_SelectOpenAccount" name="Select Open New Account" />
+    <task id="Task_EnterCustomerDetails" name="Enter Customer Details" />
+    <task id="Task_VerifyIdentity" name="Verify Customer Identity" />
+    <task id="Task_UploadKYC" name="Upload KYC Documents" />
+    <task id="Task_SelectAccountType" name="Select Account Type" />
+    <task id="Task_SubmitApproval" name="Submit for Approval" />
+    <exclusiveGateway id="GW_Approved" name="Approved?" />
+    <endEvent id="End_AccountCreated" name="Account Created" />
+    <endEvent id="End_Rejected" name="Rejected" />
+    <sequenceFlow id="SF_Start_Select" sourceRef="Start_TellerLoggedIn" targetRef="Task_SelectOpenAccount" />
+    <sequenceFlow id="SF_Select_Enter" sourceRef="Task_SelectOpenAccount" targetRef="Task_EnterCustomerDetails" />
+    <sequenceFlow id="SF_Enter_Verify" sourceRef="Task_EnterCustomerDetails" targetRef="Task_VerifyIdentity" />
+    <sequenceFlow id="SF_Verify_Upload" sourceRef="Task_VerifyIdentity" targetRef="Task_UploadKYC" />
+    <sequenceFlow id="SF_Upload_SelectType" sourceRef="Task_UploadKYC" targetRef="Task_SelectAccountType" />
+    <sequenceFlow id="SF_SelectType_Submit" sourceRef="Task_SelectAccountType" targetRef="Task_SubmitApproval" />
+    <sequenceFlow id="SF_Submit_GW" sourceRef="Task_SubmitApproval" targetRef="GW_Approved" />
+    <sequenceFlow id="SF_GW_Created" name="Yes" sourceRef="GW_Approved" targetRef="End_AccountCreated" />
+    <sequenceFlow id="SF_GW_Rejected" name="No" sourceRef="GW_Approved" targetRef="End_Rejected" />
   </process>
-
-  <!-- CUSTOMER POOL -->
-  <process id="Proc_Customer" isExecutable="false">
-    <startEvent id="Task_CustomerPresent" name="Present at Branch with ID &amp; KYC Docs">
-      <outgoing>cust_sf1</outgoing>
-    </startEvent>
-    <sequenceFlow id="cust_sf1" sourceRef="Task_CustomerPresent" targetRef="Task_CustomerNotified"/>
-    <endEvent id="Task_CustomerNotified" name="Receive Account Confirmation">
-      <incoming>cust_sf1</incoming>
-    </endEvent>
+  <process id="Process_Customer" name="Customer" isExecutable="false">
+    <intermediateCatchEvent id="IntCatch_PresentDocs" name="Present ID &#38; Docs">
+      <messageEventDefinition id="MED_PresentDocs" />
+    </intermediateCatchEvent>
+    <endEvent id="End_AccountConfirmed" name="Account Confirmed" />
+    <endEvent id="Event_064f1h9" name="Rejected" />
+    <sequenceFlow id="SF_PresentDocs_Confirmed" sourceRef="IntCatch_PresentDocs" targetRef="End_AccountConfirmed" />
   </process>
-
-  <!-- SYSTEM POOL -->
-  <process id="Proc_System" isExecutable="false">
-    <startEvent id="Start_System" name="Receive Account Request">
-      <outgoing>sys_sf1</outgoing>
-    </startEvent>
-    <sequenceFlow id="sys_sf1" sourceRef="Start_System" targetRef="Task_ValidateInput"/>
-    <task id="Task_ValidateInput" name="Validate Customer Data &amp; KYC Documents">
-      <incoming>sys_sf1</incoming>
-      <outgoing>sys_sf2</outgoing>
-    </task>
-    <sequenceFlow id="sys_sf2" sourceRef="Task_ValidateInput" targetRef="GW_ValidationResult"/>
-    <exclusiveGateway id="GW_ValidationResult" name="Data Valid?">
-      <incoming>sys_sf2</incoming>
-      <outgoing>sys_sf3_ok</outgoing>
-      <outgoing>sys_sf3_fail</outgoing>
-    </exclusiveGateway>
-    <sequenceFlow id="sys_sf3_ok" name="Valid" sourceRef="GW_ValidationResult" targetRef="Task_SystemConfirm"/>
-    <sequenceFlow id="sys_sf3_fail" name="Invalid" sourceRef="GW_ValidationResult" targetRef="Task_SystemError"/>
-    <task id="Task_SystemConfirm" name="Create Account, Generate Account Number &amp; Log Audit Trail">
-      <incoming>sys_sf3_ok</incoming>
-      <outgoing>sys_sf4</outgoing>
-    </task>
-    <task id="Task_SystemError" name="Display Error — Prompt Teller to Correct Data">
-      <incoming>sys_sf3_fail</incoming>
-      <outgoing>sys_sf5</outgoing>
-    </task>
-    <endEvent id="End_SysSuccess" name="Account Live in System">
-      <incoming>sys_sf4</incoming>
-    </endEvent>
-    <endEvent id="End_SysError" name="Process Halted">
-      <incoming>sys_sf5</incoming>
-    </endEvent>
-    <sequenceFlow id="sys_sf4" sourceRef="Task_SystemConfirm" targetRef="End_SysSuccess"/>
-    <sequenceFlow id="sys_sf5" sourceRef="Task_SystemError" targetRef="End_SysError"/>
+  <process id="Process_BankingSystem" name="Banking System" isExecutable="false">
+    <intermediateCatchEvent id="IntCatch_ReceiveKYC" name="Receive KYC Request">
+      <messageEventDefinition id="MED_ReceiveKYC" />
+    </intermediateCatchEvent>
+    <task id="Task_ValidateKYC" name="Validate Customer Data &#38; KYC" />
+    <exclusiveGateway id="GW_DataValid" name="Data Valid?" />
+    <task id="Task_CreateAccount" name="Create Account &#38; Generate Acct No." />
+    <endEvent id="End_AccountActive" name="Account Active" />
+    <endEvent id="End_ValidationError" name="Validation Error" />
+    <sequenceFlow id="SF_ReceiveKYC_Validate" sourceRef="IntCatch_ReceiveKYC" targetRef="Task_ValidateKYC" />
+    <sequenceFlow id="SF_Validate_GW" sourceRef="Task_ValidateKYC" targetRef="GW_DataValid" />
+    <sequenceFlow id="SF_GW_CreateAcct" name="Valid" sourceRef="GW_DataValid" targetRef="Task_CreateAccount" />
+    <sequenceFlow id="SF_GW_ValError" name="Invalid" sourceRef="GW_DataValid" targetRef="End_ValidationError" />
+    <sequenceFlow id="SF_CreateAcct_Active" sourceRef="Task_CreateAccount" targetRef="End_AccountActive" />
   </process>
-
-  <!-- SUPERVISOR POOL -->
-  <process id="Proc_Supervisor" isExecutable="false">
-    <startEvent id="Task_SupervisorReview" name="Receive Account Opening Request">
-      <outgoing>sup_sf1</outgoing>
-    </startEvent>
-    <sequenceFlow id="sup_sf1" sourceRef="Task_SupervisorReview" targetRef="Task_ReviewDetails"/>
-    <task id="Task_ReviewDetails" name="Review Customer Details, Identity &amp; KYC Documents">
-      <incoming>sup_sf1</incoming>
-      <outgoing>sup_sf2</outgoing>
-    </task>
-    <sequenceFlow id="sup_sf2" sourceRef="Task_ReviewDetails" targetRef="Task_SupervisorDecide"/>
-    <task id="Task_SupervisorDecide" name="Approve or Reject Account Opening">
-      <incoming>sup_sf2</incoming>
-      <outgoing>sup_sf3</outgoing>
-    </task>
-    <endEvent id="End_SupDecision" name="Decision Sent to Teller">
-      <incoming>sup_sf3</incoming>
-    </endEvent>
-    <sequenceFlow id="sup_sf3" sourceRef="Task_SupervisorDecide" targetRef="End_SupDecision"/>
+  <process id="Process_Supervisor" name="Supervisor" isExecutable="false">
+    <intermediateCatchEvent id="IntCatch_ReceiveApprovalRequest" name="Receive Approval Request">
+      <messageEventDefinition id="MED_ReceiveApproval" />
+    </intermediateCatchEvent>
+    <task id="Task_ReviewKYC" name="Review Customer &#38; KYC" />
+    <task id="Task_ApproveReject" name="Approve or Reject" />
+    <endEvent id="End_DecisionSent" name="Decision Sent" />
+    <sequenceFlow id="SF_ReceiveApproval_Review" sourceRef="IntCatch_ReceiveApprovalRequest" targetRef="Task_ReviewKYC" />
+    <sequenceFlow id="SF_Review_Decide" sourceRef="Task_ReviewKYC" targetRef="Task_ApproveReject" />
+    <sequenceFlow id="SF_Decide_DecisionSent" sourceRef="Task_ApproveReject" targetRef="End_DecisionSent" />
   </process>
-
-  <!-- DIAGRAM LAYOUT -->
-  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collab_AccountOpening">
-
-      <!-- TELLER POOL -->
-      <bpmndi:BPMNShape id="Pool_Teller_di" bpmnElement="Pool_Teller" isHorizontal="true">
-        <dc:Bounds x="130" y="80" width="1080" height="250"/>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_AccountOpening">
+    <bpmndi:BPMNPlane id="BPMNPlane_AccountOpening" bpmnElement="Collaboration_AccountOpening">
+      <bpmndi:BPMNShape id="Shape_Pool_BankTeller" bpmnElement="Pool_BankTeller" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1300" height="230" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_Teller_di" bpmnElement="Lane_Teller" isHorizontal="true">
-        <dc:Bounds x="160" y="80" width="1050" height="250"/>
+      <bpmndi:BPMNShape id="Shape_Start_TellerLoggedIn" bpmnElement="Start_TellerLoggedIn">
+        <dc:Bounds x="197" y="170" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="190" y="213" width="79" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Start_TellerLogin_di" bpmnElement="Start_TellerLogin">
-        <dc:Bounds x="192" y="187" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="178" y="230" width="66" height="27"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_Task_SelectOpenAccount" bpmnElement="Task_SelectOpenAccount">
+        <dc:Bounds x="246" y="156" width="112" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SelectOpenAccount_di" bpmnElement="Task_SelectOpenAccount">
-        <dc:Bounds x="278" y="165" width="110" height="80"/>
+      <bpmndi:BPMNShape id="Shape_Task_EnterDetails" bpmnElement="Task_EnterCustomerDetails">
+        <dc:Bounds x="366" y="156" width="112" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_EnterCustomerDetails_di" bpmnElement="Task_EnterCustomerDetails">
-        <dc:Bounds x="438" y="165" width="110" height="80"/>
+      <bpmndi:BPMNShape id="Shape_Task_VerifyIdentity" bpmnElement="Task_VerifyIdentity">
+        <dc:Bounds x="486" y="156" width="112" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_TellerVerify_di" bpmnElement="Task_TellerVerify">
-        <dc:Bounds x="598" y="165" width="110" height="80"/>
+      <bpmndi:BPMNShape id="Shape_Task_UploadKYC" bpmnElement="Task_UploadKYC">
+        <dc:Bounds x="606" y="156" width="112" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_UploadKYC_di" bpmnElement="Task_UploadKYC">
-        <dc:Bounds x="758" y="165" width="110" height="80"/>
+      <bpmndi:BPMNShape id="Shape_Task_SelectAccountType" bpmnElement="Task_SelectAccountType">
+        <dc:Bounds x="726" y="156" width="112" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SelectAccountType_di" bpmnElement="Task_SelectAccountType">
-        <dc:Bounds x="918" y="165" width="110" height="80"/>
+      <bpmndi:BPMNShape id="Shape_Task_SubmitApproval" bpmnElement="Task_SubmitApproval">
+        <dc:Bounds x="846" y="156" width="112" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SendApproval_di" bpmnElement="Task_SendApproval">
-        <dc:Bounds x="1078" y="165" width="110" height="80"/>
+      <bpmndi:BPMNShape id="Shape_GW_Approved" bpmnElement="GW_Approved" isMarkerVisible="true">
+        <dc:Bounds x="886" y="249" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="875" y="287" width="53" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <!-- Row 2 -->
-      <bpmndi:BPMNShape id="Task_ReceiveDecision_di" bpmnElement="Task_ReceiveDecision">
-        <dc:Bounds x="918" y="290" width="110" height="80"/>
+      <bpmndi:BPMNShape id="Shape_End_AccountCreated" bpmnElement="End_AccountCreated">
+        <dc:Bounds x="997" y="250" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="971" y="284" width="82" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="GW_ApprovalDecision_di" bpmnElement="GW_ApprovalDecision" isMarkerVisible="true">
-        <dc:Bounds x="773" y="305" width="50" height="50"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="762" y="362" width="72" height="14"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_End_Rejected" bpmnElement="End_Rejected">
+        <dc:Bounds x="887" y="325" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="880" y="360" width="44" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_CorrectionNeeded_di" bpmnElement="Task_CorrectionNeeded">
-        <dc:Bounds x="598" y="290" width="110" height="80"/>
+      <bpmndi:BPMNEdge id="Edge_SF_Start_Select" bpmnElement="SF_Start_Select">
+        <di:waypoint x="227" y="185" />
+        <di:waypoint x="246" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Select_Enter" bpmnElement="SF_Select_Enter">
+        <di:waypoint x="358" y="185" />
+        <di:waypoint x="366" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Enter_Verify" bpmnElement="SF_Enter_Verify">
+        <di:waypoint x="478" y="185" />
+        <di:waypoint x="486" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Verify_Upload" bpmnElement="SF_Verify_Upload">
+        <di:waypoint x="598" y="185" />
+        <di:waypoint x="606" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Upload_SelectType" bpmnElement="SF_Upload_SelectType">
+        <di:waypoint x="718" y="185" />
+        <di:waypoint x="726" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SelectType_Submit" bpmnElement="SF_SelectType_Submit">
+        <di:waypoint x="838" y="185" />
+        <di:waypoint x="846" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Submit_GW" bpmnElement="SF_Submit_GW">
+        <di:waypoint x="902" y="214" />
+        <di:waypoint x="902" y="249" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GW_Created" bpmnElement="SF_GW_Created">
+        <di:waypoint x="918" y="265" />
+        <di:waypoint x="997" y="265" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="950" y="248" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GW_Rejected" bpmnElement="SF_GW_Rejected">
+        <di:waypoint x="902" y="281" />
+        <di:waypoint x="902" y="325" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="906" y="294" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Pool_Customer" bpmnElement="Pool_Customer" isHorizontal="true">
+        <dc:Bounds x="160" y="320" width="1300" height="120" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_AccountCreated_di" bpmnElement="End_AccountCreated">
-        <dc:Bounds x="678" y="375" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="652" y="418" width="90" height="27"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_IntCatch_PresentDocs" bpmnElement="IntCatch_PresentDocs">
+        <dc:Bounds x="529" y="367" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="510" y="398" width="64" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
-        <dc:Bounds x="500" y="375" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="473" y="418" width="90" height="27"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_End_AccountConfirmed" bpmnElement="End_AccountConfirmed">
+        <dc:Bounds x="707" y="365" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="696" y="400" width="52" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-
-      <!-- Teller flows -->
-      <bpmndi:BPMNEdge id="sf1_di" bpmnElement="sf1"><di:waypoint x="228" y="205"/><di:waypoint x="278" y="205"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf2_di" bpmnElement="sf2"><di:waypoint x="388" y="205"/><di:waypoint x="438" y="205"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf3_di" bpmnElement="sf3"><di:waypoint x="548" y="205"/><di:waypoint x="598" y="205"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf4_di" bpmnElement="sf4"><di:waypoint x="708" y="205"/><di:waypoint x="758" y="205"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf5_di" bpmnElement="sf5"><di:waypoint x="868" y="205"/><di:waypoint x="918" y="205"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf6_di" bpmnElement="sf6"><di:waypoint x="1028" y="205"/><di:waypoint x="1078" y="205"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf7_di" bpmnElement="sf7"><di:waypoint x="1133" y="245"/><di:waypoint x="1133" y="330"/><di:waypoint x="1028" y="330"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf8_di" bpmnElement="sf8"><di:waypoint x="918" y="330"/><di:waypoint x="823" y="330"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf9_yes_di" bpmnElement="sf9_yes"><di:waypoint x="798" y="355"/><di:waypoint x="798" y="393"/><di:waypoint x="714" y="393"/><bpmndi:BPMNLabel><dc:Bounds x="742" y="360" width="20" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf9_no_di" bpmnElement="sf9_no"><di:waypoint x="773" y="330"/><di:waypoint x="708" y="330"/><bpmndi:BPMNLabel><dc:Bounds x="700" y="308" width="80" height="27"/></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sf10_di" bpmnElement="sf10"><di:waypoint x="653" y="355"/><di:waypoint x="653" y="393"/><di:waypoint x="536" y="393"/></bpmndi:BPMNEdge>
-
-      <!-- CUSTOMER POOL -->
-      <bpmndi:BPMNShape id="Pool_Customer_di" bpmnElement="Pool_Customer" isHorizontal="true">
-        <dc:Bounds x="130" y="360" width="350" height="100"/>
+      <bpmndi:BPMNShape id="BPMNShape_0vn4cjr" bpmnElement="Event_064f1h9">
+        <dc:Bounds x="885" y="325" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="888" y="359" width="44" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_CustomerPresent_di" bpmnElement="Task_CustomerPresent">
-        <dc:Bounds x="192" y="383" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="168" y="426" width="86" height="40"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNEdge id="Edge_SF_PresentDocs_Confirmed" bpmnElement="SF_PresentDocs_Confirmed">
+        <di:waypoint x="555" y="380" />
+        <di:waypoint x="707" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Pool_BankingSystem" bpmnElement="Pool_BankingSystem" isHorizontal="true">
+        <dc:Bounds x="160" y="450" width="1300" height="200" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_CustomerNotified_di" bpmnElement="Task_CustomerNotified">
-        <dc:Bounds x="412" y="383" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="388" y="426" width="86" height="27"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_IntCatch_ReceiveKYC" bpmnElement="IntCatch_ReceiveKYC">
+        <dc:Bounds x="649" y="522" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="629" y="553" width="66" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="cust_sf1_di" bpmnElement="cust_sf1"><di:waypoint x="228" y="401"/><di:waypoint x="412" y="401"/></bpmndi:BPMNEdge>
-
-      <!-- SYSTEM POOL -->
-      <bpmndi:BPMNShape id="Pool_System_di" bpmnElement="Pool_System" isHorizontal="true">
-        <dc:Bounds x="130" y="490" width="1080" height="180"/>
+      <bpmndi:BPMNShape id="Shape_Task_ValidateKYC" bpmnElement="Task_ValidateKYC">
+        <dc:Bounds x="697" y="506" width="148" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Start_System_di" bpmnElement="Start_System">
-        <dc:Bounds x="192" y="561" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="165" y="604" width="90" height="27"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_GW_DataValid" bpmnElement="GW_DataValid" isMarkerVisible="true">
+        <dc:Bounds x="894" y="519" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="882" y="557" width="57" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_ValidateInput_di" bpmnElement="Task_ValidateInput">
-        <dc:Bounds x="278" y="540" width="130" height="80"/>
+      <bpmndi:BPMNShape id="Shape_Task_CreateAccount" bpmnElement="Task_CreateAccount">
+        <dc:Bounds x="962" y="506" width="148" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="GW_ValidationResult_di" bpmnElement="GW_ValidationResult" isMarkerVisible="true">
-        <dc:Bounds x="458" y="555" width="50" height="50"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="445" y="612" width="76" height="14"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_End_AccountActive" bpmnElement="End_AccountActive">
+        <dc:Bounds x="1155" y="520" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1134" y="555" width="72" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SystemConfirm_di" bpmnElement="Task_SystemConfirm">
-        <dc:Bounds x="558" y="540" width="160" height="80"/>
+      <bpmndi:BPMNShape id="Shape_End_ValidationError" bpmnElement="End_ValidationError">
+        <dc:Bounds x="897" y="597" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="872" y="628" width="76" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SystemError_di" bpmnElement="Task_SystemError">
-        <dc:Bounds x="558" y="640" width="160" height="80"/>
+      <bpmndi:BPMNEdge id="Edge_SF_ReceiveKYC_Validate" bpmnElement="SF_ReceiveKYC_Validate">
+        <di:waypoint x="675" y="535" />
+        <di:waypoint x="697" y="535" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Validate_GW" bpmnElement="SF_Validate_GW">
+        <di:waypoint x="845" y="535" />
+        <di:waypoint x="894" y="535" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GW_CreateAcct" bpmnElement="SF_GW_CreateAcct">
+        <di:waypoint x="926" y="535" />
+        <di:waypoint x="962" y="535" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="933" y="518" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_GW_ValError" bpmnElement="SF_GW_ValError">
+        <di:waypoint x="910" y="551" />
+        <di:waypoint x="910" y="597" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="915" y="568" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_CreateAcct_Active" bpmnElement="SF_CreateAcct_Active">
+        <di:waypoint x="1110" y="535" />
+        <di:waypoint x="1155" y="535" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Pool_Supervisor" bpmnElement="Pool_Supervisor" isHorizontal="true">
+        <dc:Bounds x="160" y="660" width="1300" height="190" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_SysSuccess_di" bpmnElement="End_SysSuccess">
-        <dc:Bounds x="778" y="561" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="758" y="604" width="76" height="27"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_IntCatch_ReceiveApprovalRequest" bpmnElement="IntCatch_ReceiveApprovalRequest">
+        <dc:Bounds x="949" y="742" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="919" y="773" width="86" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_SysError_di" bpmnElement="End_SysError">
-        <dc:Bounds x="778" y="661" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="756" y="704" width="82" height="14"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_Task_ReviewKYC" bpmnElement="Task_ReviewKYC">
+        <dc:Bounds x="997" y="726" width="145" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="sys_sf1_di" bpmnElement="sys_sf1"><di:waypoint x="228" y="579"/><di:waypoint x="278" y="579"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sys_sf2_di" bpmnElement="sys_sf2"><di:waypoint x="408" y="579"/><di:waypoint x="458" y="579"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sys_sf3_ok_di" bpmnElement="sys_sf3_ok"><di:waypoint x="508" y="579"/><di:waypoint x="558" y="579"/><bpmndi:BPMNLabel><dc:Bounds x="518" y="562" width="30" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sys_sf3_fail_di" bpmnElement="sys_sf3_fail"><di:waypoint x="483" y="605"/><di:waypoint x="483" y="680"/><di:waypoint x="558" y="680"/><bpmndi:BPMNLabel><dc:Bounds x="490" y="632" width="36" height="14"/></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sys_sf4_di" bpmnElement="sys_sf4"><di:waypoint x="718" y="579"/><di:waypoint x="778" y="579"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sys_sf5_di" bpmnElement="sys_sf5"><di:waypoint x="718" y="680"/><di:waypoint x="778" y="679"/></bpmndi:BPMNEdge>
-
-      <!-- SUPERVISOR POOL -->
-      <bpmndi:BPMNShape id="Pool_Supervisor_di" bpmnElement="Pool_Supervisor" isHorizontal="true">
-        <dc:Bounds x="130" y="700" width="1080" height="160"/>
+      <bpmndi:BPMNShape id="Shape_Task_ApproveReject" bpmnElement="Task_ApproveReject">
+        <dc:Bounds x="1154" y="726" width="145" height="58" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SupervisorReview_di" bpmnElement="Task_SupervisorReview">
-        <dc:Bounds x="192" y="751" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="164" y="794" width="94" height="27"/></bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Shape_End_DecisionSent" bpmnElement="End_DecisionSent">
+        <dc:Bounds x="1344" y="740" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1325" y="775" width="69" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_ReviewDetails_di" bpmnElement="Task_ReviewDetails">
-        <dc:Bounds x="298" y="729" width="140" height="80"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_SupervisorDecide_di" bpmnElement="Task_SupervisorDecide">
-        <dc:Bounds x="498" y="729" width="140" height="80"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="End_SupDecision_di" bpmnElement="End_SupDecision">
-        <dc:Bounds x="698" y="751" width="36" height="36"/>
-        <bpmndi:BPMNLabel><dc:Bounds x="672" y="794" width="90" height="27"/></bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="sup_sf1_di" bpmnElement="sup_sf1"><di:waypoint x="228" y="769"/><di:waypoint x="298" y="769"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sup_sf2_di" bpmnElement="sup_sf2"><di:waypoint x="438" y="769"/><di:waypoint x="498" y="769"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="sup_sf3_di" bpmnElement="sup_sf3"><di:waypoint x="638" y="769"/><di:waypoint x="698" y="769"/></bpmndi:BPMNEdge>
-
-      <!-- Message flows -->
-      <bpmndi:BPMNEdge id="mf1_di" bpmnElement="mf1"><di:waypoint x="653" y="245"/><di:waypoint x="653" y="383"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="mf2_di" bpmnElement="mf2"><di:waypoint x="1133" y="245"/><di:waypoint x="1133" y="769"/><di:waypoint x="638" y="769"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="mf3_di" bpmnElement="mf3"><di:waypoint x="716" y="769"/><di:waypoint x="973" y="370"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="mf4_di" bpmnElement="mf4"><di:waypoint x="718" y="579"/><di:waypoint x="718" y="450"/><di:waypoint x="430" y="401"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_ReceiveApproval_Review" bpmnElement="SF_ReceiveApproval_Review">
+        <di:waypoint x="975" y="755" />
+        <di:waypoint x="997" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Review_Decide" bpmnElement="SF_Review_Decide">
+        <di:waypoint x="1142" y="755" />
+        <di:waypoint x="1154" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Decide_DecisionSent" bpmnElement="SF_Decide_DecisionSent">
+        <di:waypoint x="1299" y="755" />
+        <di:waypoint x="1344" y="755" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_IdentityCheck" bpmnElement="MF_IdentityCheck">
+        <di:waypoint x="542" y="214" />
+        <di:waypoint x="542" y="340" />
+        <di:waypoint x="542" y="367" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="545" y="328" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_KYCSubmitted" bpmnElement="MF_KYCSubmitted">
+        <di:waypoint x="662" y="214" />
+        <di:waypoint x="662" y="470" />
+        <di:waypoint x="662" y="522" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="665" y="458" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_ApprovalRequest" bpmnElement="MF_ApprovalRequest">
+        <di:waypoint x="932" y="214" />
+        <di:waypoint x="932" y="680" />
+        <di:waypoint x="962" y="680" />
+        <di:waypoint x="962" y="742" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="949" y="668" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </definitions>
