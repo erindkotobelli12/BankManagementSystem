@@ -1,0 +1,11 @@
+1. Singleton — SystemHealth
+One global instance that monitors CPU, memory, DB performance and active alerts. All calls to viewSystemHealthDashboard() go through the same single instance.
+
+2. Factory — Account subtypes
+An AccountFactory centralizes the creation of SavingsAccount, CurrentAccount, LoanAccount, FixedDepositAccount etc. Instead of scattering new SavingsAccount() across the codebase, one factory method handles it all based on type.
+
+3. Command — Transaction types
+Deposit, Withdrawal, FundTransfer, CardPayment each become a Command object with execute() and undo(). This enables queuing (isQueued), reversals (isReversible()), and clean audit logging.
+
+4. Proxy — TransactionProxy (double-tap protection)
+Sits between the Customer and the real FundTransfer. If the same transaction is submitted twice within a short time window, the Proxy blocks it and fires a Notification to the user — "Did you mean to send this again?" — instead of processing it twice. Protects less tech-savvy users from accidental duplicate transactions.
