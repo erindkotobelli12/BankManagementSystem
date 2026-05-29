@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="BankManagementSystem_ClassDiagram" id="0">
-    <mxGraphModel dx="4593" dy="2976" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
+    <mxGraphModel dx="4520" dy="3000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -38,7 +38,7 @@
           <mxGeometry height="18" width="280" y="184" as="geometry" />
         </mxCell>
         <mxCell id="129" parent="2" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#EBF5FB;strokeColor=#2E86C1;fontColor=#1a1a1a;swimlaneLine=1;rounded=0;fontSize=11;swimlaneHead=0;" value="Customer" vertex="1">
-          <mxGeometry height="590" width="430" x="1130" y="570" as="geometry">
+          <mxGeometry height="640" width="430" x="1130" y="570" as="geometry">
             <mxRectangle height="40" width="90" x="1030" y="582" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
@@ -132,8 +132,17 @@
         <mxCell id="159" parent="129" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ updateContactInfo(data: Map) : void" vertex="1">
           <mxGeometry height="18" width="250" y="562" as="geometry" />
         </mxCell>
+        <mxCell id="NEW-C-001" parent="129" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ blockCard(cardID: String) : void" vertex="1">
+          <mxGeometry height="18" width="370" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="NEW-C-002" parent="129" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ unblockCard(cardID: String) : void" vertex="1">
+          <mxGeometry height="18" width="370" y="598" as="geometry" />
+        </mxCell>
+        <mxCell id="NEW-C-003" parent="129" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ viewAmortizationSchedule(loanID: String) : LoanRepaymentSchedule" vertex="1">
+          <mxGeometry height="18" width="430" y="616" as="geometry" />
+        </mxCell>
         <mxCell id="59" parent="2" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#EBF5FB;strokeColor=#2E86C1;fontColor=#1a1a1a;swimlaneLine=1;rounded=0;fontSize=11;swimlaneHead=0;" value="BankStaff" vertex="1">
-          <mxGeometry height="464" width="370" x="1200" y="60" as="geometry" />
+          <mxGeometry height="490" width="370" x="1200" y="60" as="geometry" />
         </mxCell>
         <mxCell id="60" parent="59" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="- department : String" vertex="1">
           <mxGeometry height="18" width="250" y="50" as="geometry" />
@@ -204,8 +213,11 @@
         <mxCell id="82" parent="59" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ freezeAccount(accountID: String, reason: String) : void" vertex="1">
           <mxGeometry height="18" width="320" y="436" as="geometry" />
         </mxCell>
+        <mxCell id="NEW-S-001" parent="59" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ handleCustomerFeedback(feedbackID: String, response: String) : void" vertex="1">
+          <mxGeometry height="18" width="370" y="454" as="geometry" />
+        </mxCell>
         <mxCell id="42" parent="2" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#EBF5FB;strokeColor=#2E86C1;fontColor=#1a1a1a;swimlaneLine=1;rounded=0;fontSize=11;swimlaneHead=0;" value="BankDirector" vertex="1">
-          <mxGeometry height="380" width="350" x="760" y="70" as="geometry" />
+          <mxGeometry height="420" width="350" x="760" y="70" as="geometry" />
         </mxCell>
         <mxCell id="43" parent="42" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="- assignedBranches : List &lt;String&gt;" vertex="1">
           <mxGeometry height="18" width="250" y="50" as="geometry" />
@@ -263,6 +275,9 @@
         </mxCell>
         <mxCell id="2EvQe6Kl7H8tIz8mnhFJ-1190" parent="42" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ reviewAndApproveChanges() : void" vertex="1">
           <mxGeometry height="18" width="250" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="NEW-D-001" parent="42" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ viewExecutiveDashboard() : Report" vertex="1">
+          <mxGeometry height="18" width="320" y="382" as="geometry" />
         </mxCell>
         <mxCell id="27" parent="2" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#EBF5FB;strokeColor=#2E86C1;fontColor=#1a1a1a;swimlaneLine=1;rounded=0;fontSize=11;swimlaneHead=0;" value="Administrator" vertex="1">
           <mxGeometry height="455" width="320" x="380" y="65" as="geometry" />
@@ -430,7 +445,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="83" parent="2" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#EBF5FB;strokeColor=#2E86C1;fontColor=#1a1a1a;swimlaneLine=1;rounded=0;fontSize=11;swimlaneHead=0;" value="BankTeller" vertex="1">
-          <mxGeometry height="336" width="380" x="10" y="590" as="geometry" />
+          <mxGeometry height="360" width="380" x="10" y="590" as="geometry" />
         </mxCell>
         <mxCell id="84" parent="83" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="- counterNumber : String" vertex="1">
           <mxGeometry height="18" width="250" y="50" as="geometry" />
@@ -476,6 +491,9 @@
         </mxCell>
         <mxCell id="98" parent="83" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ issueCashAdvance(cardID: String, amount: double) : Transaction" vertex="1">
           <mxGeometry height="18" width="310" y="292" as="geometry" />
+        </mxCell>
+        <mxCell id="NEW-T-001" parent="83" style="text;strokeColor=none;fillColor=none;align=left;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=10;" value="+ giveAccountDataToCustomer(customerID: String, dataType: String) : Object" vertex="1">
+          <mxGeometry height="18" width="380" y="310" as="geometry" />
         </mxCell>
         <mxCell id="1067" edge="1" parent="2" source="3" style="endArrow=block;endFill=0;endSize=10;startArrow=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;edgeStyle=orthogonalEdgeStyle;" target="83" value="">
           <mxGeometry relative="1" as="geometry" />
