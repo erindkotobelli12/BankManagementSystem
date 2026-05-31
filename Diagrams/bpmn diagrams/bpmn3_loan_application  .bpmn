@@ -1,0 +1,685 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_LoanApplication" targetNamespace="http://example.com/bpmn/loan-application" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.13.2">
+  <collaboration id="Collaboration_LoanApplication">
+    <participant id="Pool_Customer" name="Customer" processRef="Process_Customer" />
+    <participant id="Pool_BankingSys" name="Banking System" processRef="Process_BankingSystem" />
+    <participant id="Pool_BankStaff" name="Bank Staff / Loan Officer" processRef="Process_BankStaff" />
+    <participant id="Pool_Director" name="Bank Director" processRef="Process_Director" />
+    <messageFlow id="MF_AppDocs" name="Application + docs" sourceRef="Task_UploadSupportingDocs" targetRef="IntCatch_SysReceiveApp" />
+    <messageFlow id="MF_ValidationError" name="Validation error" sourceRef="End_ValidationFailed" targetRef="IntCatch_ValidationError" />
+    <messageFlow id="MF_ValidatedApp" name="Validated application" sourceRef="End_SysForwardToStaff" targetRef="IntCatch_ReceiveApplication" />
+    <messageFlow id="MF_HighValueReferral" name="High-value referral" sourceRef="End_StaffDecisionRecorded" targetRef="IntCatch_ReceiveHighValueApp" />
+    <messageFlow id="MF_StaffApproval" name="Staff approval" sourceRef="End_StaffApproved" targetRef="IntCatch_SysReceiveApproval" />
+    <messageFlow id="MF_StaffRejection" name="Rejection notice" sourceRef="End_StaffRejected" targetRef="IntCatch_AwaitDecision" />
+    <messageFlow id="MF_DirectorApproval" name="Director approval" sourceRef="End_ApprovedForwarded" targetRef="IntCatch_SysReceiveApproval" />
+    <messageFlow id="MF_DirectorRejection" name="Director rejection" sourceRef="End_HighValueRejected" targetRef="IntCatch_AwaitDecision" />
+    <messageFlow id="MF_DecisionDocs" name="Agreement &#38; disbursement notice" sourceRef="Task_SendAgreementNotify" targetRef="IntCatch_AwaitDecision" />
+  </collaboration>
+  <process id="Process_Customer" name="Customer" isExecutable="false">
+    <startEvent id="Start_LoanRequested" name="Loan&#10;Requested" />
+    <task id="Task_LoginSystem" name="Login to System" />
+    <task id="Task_FillSubmitLoanApp" name="Fill &#38; Submit Loan Application" />
+    <task id="Task_UploadSupportingDocs" name="Upload Supporting Documents" />
+    <intermediateCatchEvent id="IntCatch_ValidationError" name="Validation Error">
+      <messageEventDefinition id="MED_ValidationError" />
+    </intermediateCatchEvent>
+    <task id="Task_CorrectApplication" name="Correct Application Data" />
+    <intermediateCatchEvent id="IntCatch_AwaitDecision" name="Await Decision">
+      <messageEventDefinition id="MED_AwaitDecision" />
+    </intermediateCatchEvent>
+    <exclusiveGateway id="GW_Outcome" name="Outcome?" />
+    <task id="Task_SignLoanAgreement" name="Sign Loan Agreement" />
+    <task id="Task_SelectRepaymentOption" name="Select Repayment Option" />
+    <task id="Task_MakePayment" name="Make Payment (Online or Branch)" />
+    <exclusiveGateway id="GW_PaymentSuccessful" name="Payment&#10;Successful?" />
+    <endEvent id="End_LoanDisbursed" name="Loan Disbursed" />
+    <endEvent id="End_AppRejected" name="Application Rejected" />
+    <sequenceFlow id="SF_Cust_Start_Login" sourceRef="Start_LoanRequested" targetRef="Task_LoginSystem" />
+    <sequenceFlow id="SF_Cust_Login_Fill" sourceRef="Task_LoginSystem" targetRef="Task_FillSubmitLoanApp" />
+    <sequenceFlow id="SF_Cust_Fill_Upload" sourceRef="Task_FillSubmitLoanApp" targetRef="Task_UploadSupportingDocs" />
+    <sequenceFlow id="SF_Cust_Upload_Await" sourceRef="Task_UploadSupportingDocs" targetRef="IntCatch_AwaitDecision" />
+    <sequenceFlow id="SF_Cust_ValErr_Correct" sourceRef="IntCatch_ValidationError" targetRef="Task_CorrectApplication" />
+    <sequenceFlow id="SF_Cust_Correct_Upload" sourceRef="Task_CorrectApplication" targetRef="Task_UploadSupportingDocs" />
+    <sequenceFlow id="SF_Cust_Await_GW" sourceRef="IntCatch_AwaitDecision" targetRef="GW_Outcome" />
+    <sequenceFlow id="SF_Cust_GW_Sign" name="Approved" sourceRef="GW_Outcome" targetRef="Task_SignLoanAgreement" />
+    <sequenceFlow id="SF_Cust_GW_Rejected" name="Rejected" sourceRef="GW_Outcome" targetRef="End_AppRejected" />
+    <sequenceFlow id="SF_Cust_Sign_Disbursed" sourceRef="Task_SignLoanAgreement" targetRef="End_LoanDisbursed" />
+    <sequenceFlow id="SF_Cust_Disburse_Repay" sourceRef="End_LoanDisbursed" targetRef="Task_SelectRepaymentOption" />
+    <sequenceFlow id="SF_Cust_Repay_Make" sourceRef="Task_SelectRepaymentOption" targetRef="Task_MakePayment" />
+    <sequenceFlow id="SF_Cust_Make_GWPay" sourceRef="Task_MakePayment" targetRef="GW_PaymentSuccessful" />
+    <sequenceFlow id="SF_Cust_Pay_Success" name="Yes" sourceRef="GW_PaymentSuccessful" targetRef="Task_ViewUpdatedBalance" />
+    <sequenceFlow id="SF_Cust_Pay_Retry" name="No" sourceRef="GW_PaymentSuccessful" targetRef="Task_RetryPayment" />
+    <sequenceFlow id="SF_Cust_Retry_Make" sourceRef="Task_RetryPayment" targetRef="Task_MakePayment" />
+    <sequenceFlow id="SF_Cust_Balance_Done" sourceRef="Task_ViewUpdatedBalance" targetRef="End_RepaymentDone" />
+    <task id="Task_ViewUpdatedBalance" name="View Updated Balance &#38; Amortization Schedule" />
+    <endEvent id="End_RepaymentDone" name="Repayment Confirmed" />
+    <task id="Task_RetryPayment" name="Retry Payment" />
+  </process>
+  <process id="Process_BankingSystem" name="Banking System" isExecutable="false">
+    <intermediateCatchEvent id="IntCatch_SysReceiveApp" name="Receive Application">
+      <messageEventDefinition id="MED_SysReceiveApp" />
+    </intermediateCatchEvent>
+    <task id="Task_ValidateApplication" name="Validate Application Data" />
+    <exclusiveGateway id="GW_AppValid" name="Application&#10;Valid?" />
+    <endEvent id="End_ValidationFailed" name="Validation Error Sent">
+      <messageEventDefinition id="MED_ValidationFailed" />
+    </endEvent>
+    <intermediateCatchEvent id="IntCatch_SysReceiveApproval" name="Receive Approval">
+      <messageEventDefinition id="MED_SysReceiveApproval" />
+    </intermediateCatchEvent>
+    <task id="Task_ValidateApprovalLimits" name="Validate Approval &#38; Limits" />
+    <task id="Task_CreateLoanAccount" name="Create Loan Account &#38; Amortization Schedule" />
+    <task id="Task_DisburseFunds" name="Disburse Funds to Customer" />
+    <task id="Task_SendAgreementNotify" name="Send Agreement &#38; Notify Customer" />
+    <endEvent id="End_DisbursementComplete" name="Disbursement&#10;Complete" />
+    <sequenceFlow id="SF_Sys_Receive_Validate" sourceRef="IntCatch_SysReceiveApp" targetRef="Task_ValidateApplication" />
+    <sequenceFlow id="SF_Sys_Validate_GW" sourceRef="Task_ValidateApplication" targetRef="GW_AppValid" />
+    <sequenceFlow id="SF_Sys_GW_Invalid" name="No" sourceRef="GW_AppValid" targetRef="End_ValidationFailed" />
+    <sequenceFlow id="SF_Sys_GW_Valid" name="Yes" sourceRef="GW_AppValid" targetRef="End_SysForwardToStaff" />
+    <sequenceFlow id="SF_Sys_Approval_Validate" sourceRef="IntCatch_SysReceiveApproval" targetRef="Task_ValidateApprovalLimits" />
+    <sequenceFlow id="SF_Sys_Validate_Create" sourceRef="Task_ValidateApprovalLimits" targetRef="Task_CreateLoanAccount" />
+    <sequenceFlow id="SF_Sys_Create_Disburse" sourceRef="Task_CreateLoanAccount" targetRef="Task_DisburseFunds" />
+    <sequenceFlow id="SF_Sys_Disburse_Notify" sourceRef="Task_DisburseFunds" targetRef="Task_SendAgreementNotify" />
+    <sequenceFlow id="SF_Sys_Notify_Complete" sourceRef="Task_SendAgreementNotify" targetRef="End_DisbursementComplete" />
+    <endEvent id="End_SysForwardToStaff" name="Application&#10;Forwarded to Staff">
+      <messageEventDefinition id="MED_ForwardToStaff" />
+    </endEvent>
+  </process>
+  <process id="Process_BankStaff" name="Bank Staff / Loan Officer" isExecutable="false">
+    <intermediateCatchEvent id="IntCatch_ReceiveApplication" name="Receive Application">
+      <messageEventDefinition id="MED_ReceiveApplication" />
+    </intermediateCatchEvent>
+    <task id="Task_ReviewAppDocs" name="Review Application &#38; Documents" />
+    <task id="Task_RunCreditScore" name="Run Credit Score Check" />
+    <exclusiveGateway id="GW_DocsComplete" name="Docs&#10;Complete?" />
+    <task id="Task_RequestMoreDocs" name="Request More Documents" />
+    <task id="Task_AssessLoanRisk" name="Assess Loan Risk &#38; Recommend" />
+    <exclusiveGateway id="GW_HighValue" name="High-Value&#10;&#62; Threshold?" />
+    <task id="Task_StaffApproveReject" name="Staff: Approve or Reject Loan" />
+    <endEvent id="End_StaffRejected" name="Staff Rejected&#10;– Customer Notified">
+      <messageEventDefinition id="MED_StaffRejected" />
+    </endEvent>
+    <sequenceFlow id="SF_Staff_Receive_Review" sourceRef="IntCatch_ReceiveApplication" targetRef="Task_ReviewAppDocs" />
+    <sequenceFlow id="SF_Staff_Review_Credit" sourceRef="Task_ReviewAppDocs" targetRef="Task_RunCreditScore" />
+    <sequenceFlow id="SF_Staff_Credit_GWDocs" sourceRef="Task_RunCreditScore" targetRef="GW_DocsComplete" />
+    <sequenceFlow id="SF_Staff_GWDocs_Assess" name="Yes" sourceRef="GW_DocsComplete" targetRef="Task_AssessLoanRisk" />
+    <sequenceFlow id="SF_Staff_GWDocs_MoreDocs" name="No" sourceRef="GW_DocsComplete" targetRef="Task_RequestMoreDocs" />
+    <sequenceFlow id="SF_Staff_MoreDocs_Review" sourceRef="Task_RequestMoreDocs" targetRef="Task_ReviewAppDocs" />
+    <sequenceFlow id="SF_Staff_Assess_GWHighVal" sourceRef="Task_AssessLoanRisk" targetRef="GW_HighValue" />
+    <sequenceFlow id="SF_Staff_GWHighVal_Approve" name="No" sourceRef="GW_HighValue" targetRef="Task_StaffApproveReject" />
+    <sequenceFlow id="SF_Staff_GWHighVal_Director" name="Yes" sourceRef="GW_HighValue" targetRef="End_StaffDecisionRecorded" />
+    <sequenceFlow id="SF_Staff_Approve_Approved" sourceRef="Task_StaffApproveReject" targetRef="End_StaffApproved">
+      <conditionExpression>approved</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SF_Staff_Approve_Rejected" sourceRef="Task_StaffApproveReject" targetRef="End_StaffRejected">
+      <conditionExpression>rejected</conditionExpression>
+    </sequenceFlow>
+    <endEvent id="End_StaffDecisionRecorded" name="High-Value Referral&#10;Sent to Director">
+      <messageEventDefinition id="MED_StaffHighValue" />
+    </endEvent>
+    <endEvent id="End_StaffApproved" name="Staff Approved&#10;– Forwarded">
+      <messageEventDefinition id="MED_StaffApproved" />
+    </endEvent>
+  </process>
+  <process id="Process_Director" name="Bank Director" isExecutable="false">
+    <sequenceFlow id="SF_Dir_Receive_Review" sourceRef="IntCatch_ReceiveHighValueApp" targetRef="Task_ReviewRiskCredit" />
+    <sequenceFlow id="SF_Dir_Review_Assess" sourceRef="Task_ReviewRiskCredit" targetRef="Task_AssessCollateral" />
+    <sequenceFlow id="SF_Dir_Assess_GWDecision" sourceRef="Task_AssessCollateral" targetRef="GW_DirectorDecision" />
+    <sequenceFlow id="SF_Dir_GW_Approve" name="Approved" sourceRef="GW_DirectorDecision" targetRef="Task_IssueConditionalApproval" />
+    <sequenceFlow id="SF_Dir_GW_Reject" name="Rejected" sourceRef="GW_DirectorDecision" targetRef="End_HighValueRejected" />
+    <sequenceFlow id="SF_Dir_Approve_Forwarded" sourceRef="Task_IssueConditionalApproval" targetRef="End_ApprovedForwarded" />
+    <intermediateCatchEvent id="IntCatch_ReceiveHighValueApp" name="Receive High-Value&#10;Application">
+      <messageEventDefinition id="MED_ReceiveHighValue" />
+    </intermediateCatchEvent>
+    <task id="Task_ReviewRiskCredit" name="Review Risk Report &#38; Credit Score" />
+    <task id="Task_AssessCollateral" name="Assess Collateral &#38; Viability" />
+    <exclusiveGateway id="GW_DirectorDecision" name="Director&#10;Decision?" />
+    <endEvent id="End_HighValueRejected" name="High-Value&#10;Rejected">
+      <messageEventDefinition id="MED_DirRejected" />
+    </endEvent>
+    <task id="Task_IssueConditionalApproval" name="Issue Conditional Approval" />
+    <endEvent id="End_ApprovedForwarded" name="Approved &#38;&#10;Forwarded">
+      <messageEventDefinition id="MED_DirApproved" />
+    </endEvent>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_LoanApplication">
+    <bpmndi:BPMNPlane id="BPMNPlane_LoanApplication" bpmnElement="Collaboration_LoanApplication">
+      <bpmndi:BPMNShape id="Shape_Pool_Customer" bpmnElement="Pool_Customer" isHorizontal="true">
+        <dc:Bounds x="150" y="80" width="1720" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Start_LoanRequested" bpmnElement="Start_LoanRequested">
+        <dc:Bounds x="192" y="165" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="174" y="202" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Login" bpmnElement="Task_LoginSystem">
+        <dc:Bounds x="252" y="150" width="110" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_FillSubmit" bpmnElement="Task_FillSubmitLoanApp">
+        <dc:Bounds x="382" y="150" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_UploadDocs" bpmnElement="Task_UploadSupportingDocs">
+        <dc:Bounds x="532" y="150" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_IntCatch_ValErr" bpmnElement="IntCatch_ValidationError">
+        <dc:Bounds x="692" y="165" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="667" y="196" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Correct" bpmnElement="Task_CorrectApplication">
+        <dc:Bounds x="737" y="150" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_IntCatch_AwaitDecision" bpmnElement="IntCatch_AwaitDecision">
+        <dc:Bounds x="897" y="165" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="869" y="196" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_Outcome" bpmnElement="GW_Outcome" isMarkerVisible="true">
+        <dc:Bounds x="953" y="162" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="932" y="143" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_SignLoan" bpmnElement="Task_SignLoanAgreement">
+        <dc:Bounds x="1025" y="110" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_SelectRepay" bpmnElement="Task_SelectRepaymentOption">
+        <dc:Bounds x="1270" y="110" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_MakePayment" bpmnElement="Task_MakePayment">
+        <dc:Bounds x="1420" y="110" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_PaySuccess" bpmnElement="GW_PaymentSuccessful" isMarkerVisible="true">
+        <dc:Bounds x="1575" y="122" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1550" y="100" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_LoanDisbursed" bpmnElement="End_LoanDisbursed">
+        <dc:Bounds x="1200" y="123" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1178" y="158" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_AppRejected" bpmnElement="End_AppRejected">
+        <dc:Bounds x="1025" y="220" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1053" y="216" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ViewBalance" bpmnElement="Task_ViewUpdatedBalance">
+        <dc:Bounds x="1670" y="152" width="140" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_RepaymentDone" bpmnElement="End_RepaymentDone">
+        <dc:Bounds x="1825" y="165" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1811" y="200" width="58" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RetryPay" bpmnElement="Task_RetryPayment">
+        <dc:Bounds x="1536" y="200" width="110" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Start_Login" bpmnElement="SF_Cust_Start_Login">
+        <di:waypoint x="222" y="180" />
+        <di:waypoint x="252" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Login_Fill" bpmnElement="SF_Cust_Login_Fill">
+        <di:waypoint x="362" y="178" />
+        <di:waypoint x="382" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Fill_Upload" bpmnElement="SF_Cust_Fill_Upload">
+        <di:waypoint x="512" y="178" />
+        <di:waypoint x="532" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Upload_Await" bpmnElement="SF_Cust_Upload_Await">
+        <di:waypoint x="662" y="178" />
+        <di:waypoint x="897" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_ValErr_Correct" bpmnElement="SF_Cust_ValErr_Correct">
+        <di:waypoint x="705" y="178" />
+        <di:waypoint x="737" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Correct_Upload" bpmnElement="SF_Cust_Correct_Upload">
+        <di:waypoint x="802" y="206" />
+        <di:waypoint x="802" y="240" />
+        <di:waypoint x="597" y="240" />
+        <di:waypoint x="597" y="206" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Await_GW" bpmnElement="SF_Cust_Await_GW">
+        <di:waypoint x="923" y="178" />
+        <di:waypoint x="953" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_GW_Sign" bpmnElement="SF_Cust_GW_Sign">
+        <di:waypoint x="969" y="162" />
+        <di:waypoint x="969" y="138" />
+        <di:waypoint x="1025" y="138" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="980" y="122" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_GW_Rejected" bpmnElement="SF_Cust_GW_Rejected">
+        <di:waypoint x="969" y="194" />
+        <di:waypoint x="969" y="235" />
+        <di:waypoint x="1025" y="235" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="978" y="207" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Sign_Disbursed" bpmnElement="SF_Cust_Sign_Disbursed">
+        <di:waypoint x="1155" y="138" />
+        <di:waypoint x="1200" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Disburse_Repay" bpmnElement="SF_Cust_Disburse_Repay">
+        <di:waypoint x="1230" y="138" />
+        <di:waypoint x="1270" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Repay_Make" bpmnElement="SF_Cust_Repay_Make">
+        <di:waypoint x="1400" y="138" />
+        <di:waypoint x="1420" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Make_GWPay" bpmnElement="SF_Cust_Make_GWPay">
+        <di:waypoint x="1550" y="138" />
+        <di:waypoint x="1575" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Pay_Success" bpmnElement="SF_Cust_Pay_Success">
+        <di:waypoint x="1607" y="138" />
+        <di:waypoint x="1639" y="138" />
+        <di:waypoint x="1639" y="180" />
+        <di:waypoint x="1670" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1649" y="163" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Pay_Retry" bpmnElement="SF_Cust_Pay_Retry">
+        <di:waypoint x="1591" y="154" />
+        <di:waypoint x="1591" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1594" y="171" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Retry_Make" bpmnElement="SF_Cust_Retry_Make">
+        <di:waypoint x="1536" y="228" />
+        <di:waypoint x="1485" y="228" />
+        <di:waypoint x="1485" y="166" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Cust_Balance_Done" bpmnElement="SF_Cust_Balance_Done">
+        <di:waypoint x="1740" y="152" />
+        <di:waypoint x="1740" y="132" />
+        <di:waypoint x="1830" y="132" />
+        <di:waypoint x="1830" y="169" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Pool_BankingSys" bpmnElement="Pool_BankingSys" isHorizontal="true">
+        <dc:Bounds x="150" y="290" width="1720" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_IntCatch_SysReceiveApp" bpmnElement="IntCatch_SysReceiveApp">
+        <dc:Bounds x="545" y="377" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="518" y="408" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ValidateApp" bpmnElement="Task_ValidateApplication">
+        <dc:Bounds x="591" y="362" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_AppValid" bpmnElement="GW_AppValid" isMarkerVisible="true">
+        <dc:Bounds x="741" y="374" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="783" y="376" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_ValidationFailed" bpmnElement="End_ValidationFailed">
+        <dc:Bounds x="793" y="420" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="764" y="455" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_IntCatch_SysReceiveApproval" bpmnElement="IntCatch_SysReceiveApproval">
+        <dc:Bounds x="1100" y="377" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1070" y="353" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ValidateApproval" bpmnElement="Task_ValidateApprovalLimits">
+        <dc:Bounds x="1146" y="362" width="120" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CreateLoan" bpmnElement="Task_CreateLoanAccount">
+        <dc:Bounds x="1276" y="362" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Disburse" bpmnElement="Task_DisburseFunds">
+        <dc:Bounds x="1416" y="362" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_SendAgreement" bpmnElement="Task_SendAgreementNotify">
+        <dc:Bounds x="1556" y="362" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_Disbursement" bpmnElement="End_DisbursementComplete">
+        <dc:Bounds x="1706" y="377" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1685" y="412" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_SysForwardToStaff" bpmnElement="End_SysForwardToStaff">
+        <dc:Bounds x="855" y="325" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="823" y="290" width="66" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_Receive_Validate" bpmnElement="SF_Sys_Receive_Validate">
+        <di:waypoint x="571" y="390" />
+        <di:waypoint x="591" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_Validate_GW" bpmnElement="SF_Sys_Validate_GW">
+        <di:waypoint x="721" y="390" />
+        <di:waypoint x="741" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_GW_Invalid" bpmnElement="SF_Sys_GW_Invalid">
+        <di:waypoint x="757" y="406" />
+        <di:waypoint x="757" y="435" />
+        <di:waypoint x="793" y="435" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="760" y="416" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_GW_Valid" bpmnElement="SF_Sys_GW_Valid">
+        <di:waypoint x="757" y="374" />
+        <di:waypoint x="757" y="338" />
+        <di:waypoint x="855" y="338" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="802" y="321" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_Approval_Validate" bpmnElement="SF_Sys_Approval_Validate">
+        <di:waypoint x="1113" y="403" />
+        <di:waypoint x="1113" y="420" />
+        <di:waypoint x="1156" y="420" />
+        <di:waypoint x="1156" y="418" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_Validate_Create" bpmnElement="SF_Sys_Validate_Create">
+        <di:waypoint x="1266" y="390" />
+        <di:waypoint x="1276" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_Create_Disburse" bpmnElement="SF_Sys_Create_Disburse">
+        <di:waypoint x="1406" y="390" />
+        <di:waypoint x="1416" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_Disburse_Notify" bpmnElement="SF_Sys_Disburse_Notify">
+        <di:waypoint x="1546" y="390" />
+        <di:waypoint x="1556" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Sys_Notify_Complete" bpmnElement="SF_Sys_Notify_Complete">
+        <di:waypoint x="1686" y="390" />
+        <di:waypoint x="1706" y="392" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Pool_BankStaff" bpmnElement="Pool_BankStaff" isHorizontal="true">
+        <dc:Bounds x="150" y="500" width="1720" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_IntCatch_ReceiveApp" bpmnElement="IntCatch_ReceiveApplication">
+        <dc:Bounds x="823" y="622" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="796" y="653" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ReviewApp" bpmnElement="Task_ReviewAppDocs">
+        <dc:Bounds x="869" y="607" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RunCredit" bpmnElement="Task_RunCreditScore">
+        <dc:Bounds x="1009" y="607" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_DocsComplete" bpmnElement="GW_DocsComplete" isMarkerVisible="true">
+        <dc:Bounds x="1159" y="619" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1137" y="656" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RequestMoreDocs" bpmnElement="Task_RequestMoreDocs">
+        <dc:Bounds x="1100" y="700" width="150" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AssessRisk" bpmnElement="Task_AssessLoanRisk">
+        <dc:Bounds x="1211" y="607" width="130" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_HighValue" bpmnElement="GW_HighValue" isMarkerVisible="true">
+        <dc:Bounds x="1361" y="619" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1344" y="581.5" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_StaffApprove" bpmnElement="Task_StaffApproveReject">
+        <dc:Bounds x="1413" y="607" width="150" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_StaffRejected" bpmnElement="End_StaffRejected">
+        <dc:Bounds x="1583" y="680" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1555" y="715" width="86" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_StaffDecision" bpmnElement="End_StaffDecisionRecorded">
+        <dc:Bounds x="1425" y="725" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1401" y="675" width="78" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_StaffApproved" bpmnElement="End_StaffApproved">
+        <dc:Bounds x="1625" y="620" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1604" y="655" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_Receive_Review" bpmnElement="SF_Staff_Receive_Review">
+        <di:waypoint x="849" y="635" />
+        <di:waypoint x="869" y="635" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_Review_Credit" bpmnElement="SF_Staff_Review_Credit">
+        <di:waypoint x="999" y="635" />
+        <di:waypoint x="1009" y="635" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_Credit_GWDocs" bpmnElement="SF_Staff_Credit_GWDocs">
+        <di:waypoint x="1139" y="635" />
+        <di:waypoint x="1159" y="635" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_GWDocs_Assess" bpmnElement="SF_Staff_GWDocs_Assess">
+        <di:waypoint x="1191" y="635" />
+        <di:waypoint x="1211" y="635" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1195" y="618" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_GWDocs_MoreDocs" bpmnElement="SF_Staff_GWDocs_MoreDocs">
+        <di:waypoint x="1175" y="651" />
+        <di:waypoint x="1175" y="728" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1179" y="685" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_MoreDocs_Review" bpmnElement="SF_Staff_MoreDocs_Review">
+        <di:waypoint x="1100" y="728" />
+        <di:waypoint x="869" y="728" />
+        <di:waypoint x="869" y="663" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_Assess_GWHighVal" bpmnElement="SF_Staff_Assess_GWHighVal">
+        <di:waypoint x="1341" y="635" />
+        <di:waypoint x="1361" y="635" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_GWHighVal_Approve" bpmnElement="SF_Staff_GWHighVal_Approve">
+        <di:waypoint x="1393" y="635" />
+        <di:waypoint x="1413" y="635" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1395" y="618" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_GWHighVal_Director" bpmnElement="SF_Staff_GWHighVal_Director">
+        <di:waypoint x="1377" y="651" />
+        <di:waypoint x="1377" y="740" />
+        <di:waypoint x="1425" y="740" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1381" y="687" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_Approve_Approved" bpmnElement="SF_Staff_Approve_Approved">
+        <di:waypoint x="1563" y="621" />
+        <di:waypoint x="1594" y="621" />
+        <di:waypoint x="1594" y="637" />
+        <di:waypoint x="1625" y="637" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Staff_Approve_Rejected" bpmnElement="SF_Staff_Approve_Rejected">
+        <di:waypoint x="1488" y="663" />
+        <di:waypoint x="1488" y="695" />
+        <di:waypoint x="1583" y="695" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Shape_Pool_Director" bpmnElement="Pool_Director" isHorizontal="true">
+        <dc:Bounds x="150" y="780" width="1720" height="230" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_IntCatch_ReceiveHighValue" bpmnElement="IntCatch_ReceiveHighValueApp">
+        <dc:Bounds x="1327" y="878" width="26" height="26" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1305" y="909" width="70" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ReviewRisk" bpmnElement="Task_ReviewRiskCredit">
+        <dc:Bounds x="1390" y="863" width="140" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AssessCollateral" bpmnElement="Task_AssessCollateral">
+        <dc:Bounds x="1560" y="863" width="140" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GW_DirDecision" bpmnElement="GW_DirectorDecision" isMarkerVisible="true">
+        <dc:Bounds x="1724" y="844" width="32" height="32" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1765.5" y="846" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_HighValueRejected" bpmnElement="End_HighValueRejected">
+        <dc:Bounds x="1805" y="785" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1813" y="815.5" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_IssueConditional" bpmnElement="Task_IssueConditionalApproval">
+        <dc:Bounds x="1642" y="940" width="140" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_ApprovedForwarded" bpmnElement="End_ApprovedForwarded">
+        <dc:Bounds x="1825" y="935" width="30" height="30" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1811" y="970" width="58" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SF_Dir_Receive_Review" bpmnElement="SF_Dir_Receive_Review">
+        <di:waypoint x="1353" y="891" />
+        <di:waypoint x="1390" y="891" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Dir_Review_Assess" bpmnElement="SF_Dir_Review_Assess">
+        <di:waypoint x="1530" y="891" />
+        <di:waypoint x="1560" y="891" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Dir_Assess_GWDecision" bpmnElement="SF_Dir_Assess_GWDecision">
+        <di:waypoint x="1700" y="891" />
+        <di:waypoint x="1712" y="891" />
+        <di:waypoint x="1712" y="860" />
+        <di:waypoint x="1724" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Dir_GW_Approve" bpmnElement="SF_Dir_GW_Approve">
+        <di:waypoint x="1740" y="876" />
+        <di:waypoint x="1740" y="908" />
+        <di:waypoint x="1712" y="908" />
+        <di:waypoint x="1712" y="940" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1722" y="913" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Dir_GW_Reject" bpmnElement="SF_Dir_GW_Reject">
+        <di:waypoint x="1740" y="844" />
+        <di:waypoint x="1740" y="800" />
+        <di:waypoint x="1805" y="800" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1724" y="789" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_Dir_Approve_Forwarded" bpmnElement="SF_Dir_Approve_Forwarded">
+        <di:waypoint x="1782" y="968" />
+        <di:waypoint x="1804" y="968" />
+        <di:waypoint x="1804" y="950" />
+        <di:waypoint x="1825" y="950" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_AppDocs" bpmnElement="MF_AppDocs">
+        <di:waypoint x="597" y="206" />
+        <di:waypoint x="597" y="248" />
+        <di:waypoint x="558" y="248" />
+        <di:waypoint x="558" y="377" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="560" y="252" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_ValidationError" bpmnElement="MF_ValidationError">
+        <di:waypoint x="808" y="420" />
+        <di:waypoint x="808" y="256" />
+        <di:waypoint x="705" y="256" />
+        <di:waypoint x="705" y="183" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="717" y="262" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_ValidatedApp" bpmnElement="MF_ValidatedApp">
+        <di:waypoint x="856" y="345" />
+        <di:waypoint x="856" y="489" />
+        <di:waypoint x="836" y="489" />
+        <di:waypoint x="836" y="622" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="851" y="356" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_HighValueReferral" bpmnElement="MF_HighValueReferral">
+        <di:waypoint x="1433" y="753" />
+        <di:waypoint x="1433" y="817" />
+        <di:waypoint x="1340" y="817" />
+        <di:waypoint x="1340" y="878" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1361" y="790" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_StaffApproval" bpmnElement="MF_StaffApproval">
+        <di:waypoint x="1640" y="620" />
+        <di:waypoint x="1640" y="560" />
+        <di:waypoint x="1113" y="560" />
+        <di:waypoint x="1113" y="403" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1352" y="543" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_StaffRejection" bpmnElement="MF_StaffRejection">
+        <di:waypoint x="1598" y="680" />
+        <di:waypoint x="1598" y="460" />
+        <di:waypoint x="910" y="460" />
+        <di:waypoint x="910" y="191" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1240" y="443" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_DirectorApproval" bpmnElement="MF_DirectorApproval">
+        <di:waypoint x="1840" y="935" />
+        <di:waypoint x="1840" y="470" />
+        <di:waypoint x="1127" y="470" />
+        <di:waypoint x="1127" y="403" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1450" y="453" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_DirectorRejection" bpmnElement="MF_DirectorRejection">
+        <di:waypoint x="1820" y="785" />
+        <di:waypoint x="1820" y="430" />
+        <di:waypoint x="910" y="430" />
+        <di:waypoint x="910" y="191" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1338" y="413" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_DecisionDocs" bpmnElement="MF_DecisionDocs">
+        <di:waypoint x="1621" y="362" />
+        <di:waypoint x="1621" y="268" />
+        <di:waypoint x="910" y="268" />
+        <di:waypoint x="910" y="191" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1256" y="228" width="67" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
